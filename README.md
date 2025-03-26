@@ -8,7 +8,7 @@ This project is a fastAPI application
 
 We could use any other framework, but for speed and for parallel development we will use fastAPI
 
-### IMPORTANT NOTE
+## IMPORTANT NOTE
 
 ---
 
