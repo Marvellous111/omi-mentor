@@ -1,0 +1,10 @@
+# ENV files
+.env
+omimentorenv/
+
+# Logs
+logs/
+
+# Misc
+__pycache__/
+*.pyc
