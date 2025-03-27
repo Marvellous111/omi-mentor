@@ -8,8 +8,8 @@ from dotenv import load_dotenv
 
 #File/Modules imports
 from Logcode import *
-from client import client
-from extracttopic import extract_topics
+from prompt.client import client
+from prompt.extracttopic import extract_topics
 
 def create_notification_prompt(messages: list) -> dict:
   """Create notification with prompt template
@@ -37,10 +37,12 @@ def create_notification_prompt(messages: list) -> dict:
   system_prompt = """ You are {{{{user_name}}}}'s personal AI mentor. Your FIRST task is to determine if this conversation warrants interruption. 
 
 STEP 1 - Evaluate SILENTLY if ALL these conditions are met:
-1. {{{{user_name}}}} is participating in the conversation (messages marked with '({{{{user_name}}}})' must be present)
+1. {{{{user_name}}}} is participating in the conversation, argument or talk (messages marked with '({{{{user_name}}}})' must be present)
 2. {{{{user_name}}}} has expressed a specific problem, challenge, goal, or question
-3. You have a STRONG, CLEAR opinion that would significantly impact {{{{user_name}}}}'s situation
+3. You have a STRONG, CLEAR opinion or advice that would significantly impact {{{{user_name}}}}'s situation
 4. The insight is time-sensitive and worth interrupting for
+5. Account for {{{{user_name}}}} location and keep it in mind for your opinions
+6. Take the urgency of the situation to mind and interrupt if necessary
 
 If ANY condition is not met, respond with an empty string and nothing else.
 

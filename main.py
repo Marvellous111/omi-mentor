@@ -48,15 +48,22 @@ comments tagged with (perhaps example) are edited example code
 '''
 
 
-logger.info("Starting Mentor notification service")
+# logger.info("Starting Mentor notification service")
 
 
 message_buffer = MessageBuffer()
 logger.info(f"Analysis interval set to {END_OF_CONVERSATION_IN_SECONDS} seconds")
 
-# This starts the reminder check loop in the background, message_buffer MUST be initialized first though
-reminder_thread = threading.Thread(target=reminder_check_loop(message_buffer), daemon=True)
-reminder_thread.start()
+'''IMPORTANT NOTE: The thread below hijacks the main thread and stops the app from running. This is not ideal and should be fixed.
+FIX: A simple fix would be to ensure it runs in the background AFTER the app has started.
+A condition could be after a segment is gotten from the transcript, then the thread starts.
+This way, the app can run and the thread can run in the background.
+At the moment though we can remove the notifications for now.
+'''
+# # This starts the reminder check loop in the background, message_buffer MUST be initialized first though
+# reminder_thread = threading.Thread(target=reminder_check_loop(message_buffer), daemon=True)
+# reminder_thread.start()
+
 
 @app.post("/webhook")
 def webhook():
@@ -153,13 +160,13 @@ def webhook():
         logger.info(f"Sending notification with prompt template for session {session_id}, message {message_id}")
         return notification
       
-      logger.debug("No analysis neede at this time")
+      logger.debug("No analysis needed at this time")
       return {}
     except Exception as e:
       logger.error(f"Error processing webhook: {str(e)}", exc_info=True)
       return {"error": "Internal server error"}              
     
-  return {"message": f"We got the transcript"}
+  return {"message": "We got the transcript"}
 
 @app.get('/webhook/setup-status')
 def setup_status():

@@ -20,6 +20,8 @@ comments tagged with (perhaps example) are edited example code
 
 2. Store mentor advice and conversation in a secure database to be used for context and future references where necessary.
 
+3. Build the homepage for the mentor app and host it for first time users of the app to see with setup instructions.
+
 ## HOSTING SERVICE
 
 Amazon ec2 or Render will be used for the hosting service.

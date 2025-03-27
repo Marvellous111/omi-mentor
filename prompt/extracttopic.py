@@ -8,7 +8,7 @@ import json
 from dotenv import load_dotenv
 
 #File/Modules imports
-from client import client
+from prompt.client import client
 
 load_dotenv()
 
