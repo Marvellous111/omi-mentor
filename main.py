@@ -1,5 +1,6 @@
 #Framework imports
 from fastapi import FastAPI, Request, Body
+from pydantic import BaseModel
 from fastapi.requests import Request
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -14,6 +15,7 @@ from datetime import datetime
 import threading
 
 #File/Module imports
+from data.model import Segments
 from prompt.notification import *
 from Logcode import *
 from data.constants import *
@@ -66,7 +68,7 @@ At the moment though we can remove the notifications for now.
 
 
 @app.post("/webhook")
-def webhook(session_id: str = Body(...), segments: list = Body(...), message_id: str = Body(...)):
+def webhook(session_id: str = Body(...), segments: Segments = Body(...), message_id: str = Body(...)):
   logger.info("Recieved webhook POST request")
   try:
     print(segments)
