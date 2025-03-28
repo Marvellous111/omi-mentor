@@ -166,6 +166,8 @@ def webhook():
       logger.error(f"Error processing webhook: {str(e)}", exc_info=True)
       return {"error": "Internal server error"}              
   else:
+    logger.info("Error due to incorrect request", exc_info=True)
+    print("Wrong request, get not allowed")
     return {"message": "Request not allowed"}
   # return {"message": f"Transcript: {segments}"}
 
