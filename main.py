@@ -165,8 +165,9 @@ def webhook():
     except Exception as e:
       logger.error(f"Error processing webhook: {str(e)}", exc_info=True)
       return {"error": "Internal server error"}              
-    
-  return {"message": f"Transcript: {segments}"}
+  else:
+    return {"message": "Request not allowed"}
+  # return {"message": f"Transcript: {segments}"}
 
 @app.get('/webhook/setup-status')
 def setup_status():
