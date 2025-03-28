@@ -68,11 +68,13 @@ At the moment though we can remove the notifications for now.
 
 
 @app.post("/webhook")
-def webhook(request: RequestModel = Body(...), message_id: str = Body(...)):
+def webhook(request: RequestModel = Body(...)):
   logger.info("Recieved webhook POST request")
   try:
     segments = request.segments
     session_id = request.session_id
+    
+    message_id = None
     
     print(segments)
       
