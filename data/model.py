@@ -8,7 +8,7 @@ from Logcode import *
 class Segment(BaseModel):
   text: str
   speaker: str
-  speaker_id: str
+  speaker_id: int
   is_user: bool
   person_id: Optional[int]
   start: float
