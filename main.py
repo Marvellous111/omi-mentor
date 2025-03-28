@@ -74,7 +74,14 @@ def webhook(session_id: str = Body(...), segments: List[Segment] = Body(..., emb
   try:
     message_id = None
     
-    print(segments)
+    print(segments) ## At the moment logs shows the sesgment being returned in a list of a tuple
+    ## Response is like this: [Segment(text="",...)]
+    # We can convert to json? or use tuple like that?
+    
+    segment_json = [segment.model_dump(mode="json") for segment in segments]
+    
+    print(segment_json)
+    logger.info(f"Segments converted to json are: {segment_json}")
       
     # message_id should be generated if it isnt provided
     if not message_id:
