@@ -13,17 +13,17 @@ from Logcode import *
 load_dotenv()
 
 def extract_topics(discussion_text: str) -> list:
-  """Extract topics from the discussion using grok"""
+  """Extract topics from the discussion using groq"""
   logger.info("Starting topic extraction")
   logger.debug(f"Discussion text length: {len(discussion_text)} characters")
   try:
-    logger.debug("Sending request to groq(qwen-qwq-32b) API")
+    logger.debug("Sending request to groq(llama-3.1-8b-instant) API")
     response = client.chat.completions.create(
-      model = "qwen-qwq-32b",
+      model = "llama-3.1-8b-instant", ## Ensure you stay away from models that think
       messages=[
         {
           "role": "system",
-          "content": "You are a topic extraction specialist. Extract all RELEVANT topics from the conversation. Return ONLY a JSON array of topic strings, NOTHING ELSE. Example format: [\"topic1\", \"topic2\"]"
+          "content": "You are a topic extraction specialist. Extract all RELEVANT topics from the conversation. Return ONLY a JSON array of topic strings, NOTHING ELSE, NO NEED TO TYPE ANYTHING ELSE BESIDES WHAT TO BE RETURNED. Example format: [\"topic1\", \"topic2\"]"
         },
         {
           "role": "user",
