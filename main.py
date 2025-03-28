@@ -13,6 +13,7 @@ import requests
 import time
 from datetime import datetime
 import threading
+from typing import List, Optional
 
 #File/Module imports
 from data.model import Segment, RequestModel
@@ -68,12 +69,9 @@ At the moment though we can remove the notifications for now.
 
 
 @app.post("/webhook")
-def webhook(request: RequestModel = Body(...)):
+def webhook(session_id: str = Body(...), segments: List[Segment] = Body(..., embed=True)):
   logger.info("Recieved webhook POST request")
   try:
-    segments = request.segments
-    session_id = request.session_id
-    
     message_id = None
     
     print(segments)
