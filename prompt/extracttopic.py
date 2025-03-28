@@ -1,5 +1,4 @@
 #Python builtin modules imports
-from Logcode import *
 import os
 from pathlib import Path
 import json
@@ -9,6 +8,7 @@ from dotenv import load_dotenv
 
 #File/Modules imports
 from prompt.client import client
+from Logcode import *
 
 load_dotenv()
 
@@ -31,11 +31,12 @@ def extract_topics(discussion_text: str) -> list:
         }
       ],
       max_tokens=150,
-      temperature=0.3,
-      response_format={ "type": "json_object" }
+      temperature=0.3
     )
     #Lets parse the response text as JSON
-    response_text = response.choices[0].message.content #We may not need to strip if the response type is json
+    response_text = response.choices[0].message.content.strip() #We may not need to strip if the response type is json
+    logger.debug(f"Response from groq API: {response_text}")
+    print(response_text)
     topics = json.loads(response_text)
     logger.info(f"Successfully extracted {len(topics)} topics: {topics}")
   except json.JSONDecodeError as e:
