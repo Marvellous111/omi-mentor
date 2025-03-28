@@ -1,5 +1,5 @@
 #Framework imports
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, Body
 from fastapi.requests import Request
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -66,109 +66,99 @@ At the moment though we can remove the notifications for now.
 
 
 @app.post("/webhook")
-def webhook():
+def webhook(session_id: str = Body(...), segments: list = Body(...), message_id: str = Body(...)):
   logger.info("Recieved webhook POST request")
-  if Request.method == 'POST':
-    try:
-      data = Request.json
-      session_id = data.get('session_id')
-      segments = data.get('segments', [])
-      message_id = data.get('message_id')
+  try:
+    print(segments)
       
-      print(segments)
+    # message_id should be generated if it isnt provided
+    if not message_id:
+      message_id = f"{session_id}_{int(time.time())}"
+      logger.info(f"Generated message_id: {message_id}")
       
-      # message_id should be generated if it isnt provided
-      if not message_id:
-        message_id = f"{session_id}_{int(time.time())}"
-        logger.info(f"Generated message_id: {message_id}")
+    logger.info(f"Processing webhook for session_id: {session_id}, message_id: {message_id}, segments count: {len(segments)}, aid: {APP_ID}")
       
-      logger.info(f"Processing webhook for session_id: {session_id}, message_id: {message_id}, segments count: {len(segments)}, aid: {APP_ID}")
+    if not session_id:
+      logger.error("No session_id provided in request")
+      return {"message": "No session_id provided"}
       
-      if not session_id:
-        logger.error("No session_id provided in request")
-        return {"message": "No session_id provided"}
+    current_time = time.time()
+    buffer_data = message_buffer.get_buffer(session_id)
       
-      current_time = time.time()
-      buffer_data = message_buffer.get_buffer(session_id)
-      
-      #Process new messages
-      logger.info(f"Processing {len(segments)} segments for session {session_id}")
-      for segment in segments:
-        if not segment.get('text'):
-          logger.debug("skipping empty segment")
-          continue
+    #Process new messages
+    logger.info(f"Processing {len(segments)} segments for session {session_id}")
+    for segment in segments:
+      if not segment.get('text'):
+        logger.debug("skipping empty segment")
+        continue
         
-        text = segment['text'].strip()
-        if text:
-          timestamp = segment.get('start', 0) or current_time
-          is_user = segment.get('is_user', False)
-          logger.info(f"Processing segment - is_user: {is_user}, timestamp: {timestamp}, text: {text[:50]}...")
+      text = segment['text'].strip()
+      if text:
+        timestamp = segment.get('start', 0) or current_time
+        is_user = segment.get('is_user', False)
+        logger.info(f"Processing segment - is_user: {is_user}, timestamp: {timestamp}, text: {text[:50]}...")
           
-          #Count words after silence
-          if buffer_data['silence_detected']:
-            words_in_segment = len(text.split())
-            buffer_data['words_after_silence'] += words_in_segment
-            logger.info(f"Words after silence: {buffer_data['words_after_silence']}/{message_buffer.min_words_after_silence} needed")
+        #Count words after silence
+        if buffer_data['silence_detected']:
+          words_in_segment = len(text.split())
+          buffer_data['words_after_silence'] += words_in_segment
+          logger.info(f"Words after silence: {buffer_data['words_after_silence']}/{message_buffer.min_words_after_silence} needed")
             
-            #If we have enough words, start fresh conversation
-            if buffer_data['words_after_silence'] >= message_buffer.min_words_after_silence:
-              logger.info(f"Silence period ended for session {session_id}, starting fresh conversation")
-              buffer_data['silence_detected'] = False
-              buffer_data['last_analysis_time'] = current_time  # Reset analysis timer
+          #If we have enough words, start fresh conversation
+          if buffer_data['words_after_silence'] >= message_buffer.min_words_after_silence:
+            logger.info(f"Silence period ended for session {session_id}, starting fresh conversation")
+            buffer_data['silence_detected'] = False
+            buffer_data['last_analysis_time'] = current_time  # Reset analysis timer
               
-          can_append = (
-            buffer_data['messages'] and 
-            abs(buffer_data['messages'][-1]['timestamp'] - timestamp) < 2.0 and
-            buffer_data['messages'][-1].get('is_user') == is_user
-          )
+        can_append = (
+          buffer_data['messages'] and 
+          abs(buffer_data['messages'][-1]['timestamp'] - timestamp) < 2.0 and
+          buffer_data['messages'][-1].get('is_user') == is_user
+        )
           
-          if can_append:
-            logger.info(f"Appending to existing message. Current length: {len(buffer_data['messages'][-1]['text'])}")
-            buffer_data['messages'][-1]['text'] += ' ' + text
-          else:
-            logger.info(f"Creating new message. Buffer now has {len(buffer_data['messages']) + 1} messages")
-            buffer_data['messages'].append({
-              'text': text,
-              'timestamp': timestamp,
-              'is_user': is_user
-            })
+        if can_append:
+          logger.info(f"Appending to existing message. Current length: {len(buffer_data['messages'][-1]['text'])}")
+          buffer_data['messages'][-1]['text'] += ' ' + text
+        else:
+          logger.info(f"Creating new message. Buffer now has {len(buffer_data['messages']) + 1} messages")
+          buffer_data['messages'].append({
+            'text': text,
+            'timestamp': timestamp,
+            'is_user': is_user
+          })
             
-      # Check if it's time to analyze
-      time_since_last_analysis = current_time - buffer_data['last_analysis_time']
-      logger.info(f"Time since last analysis: {time_since_last_analysis:.2f}s (threshold: {END_OF_CONVERSATION_IN_SECONDS}s)")
-      logger.info(f"Current message count: {len(buffer_data['messages'])}")
-      logger.info(f"Silence detected: {buffer_data['silence_detected']}")
+    # Check if it's time to analyze
+    time_since_last_analysis = current_time - buffer_data['last_analysis_time']
+    logger.info(f"Time since last analysis: {time_since_last_analysis:.2f}s (threshold: {END_OF_CONVERSATION_IN_SECONDS}s)")
+    logger.info(f"Current message count: {len(buffer_data['messages'])}")
+    logger.info(f"Silence detected: {buffer_data['silence_detected']}")
       
-      if ((time_since_last_analysis >= END_OF_CONVERSATION_IN_SECONDS or buffer_data['last_analysis_time'] == 0) and
-        buffer_data['messages'] and 
-        not buffer_data['silence_detected'] and
-        message_id):  # Only proceed if we have a message_id
+    if ((time_since_last_analysis >= END_OF_CONVERSATION_IN_SECONDS or buffer_data['last_analysis_time'] == 0) and
+      buffer_data['messages'] and 
+      not buffer_data['silence_detected'] and
+      message_id):  # Only proceed if we have a message_id
                 
-        logger.info("Starting analysis of messages")
-        # Sort messages by timestamp
-        sorted_messages = sorted(buffer_data['messages'], key=lambda x: x['timestamp'])
+      logger.info("Starting analysis of messages")
+      # Sort messages by timestamp
+      sorted_messages = sorted(buffer_data['messages'], key=lambda x: x['timestamp'])
                 
-        # Create notification with formatted discussion
-        notification = create_notification_prompt(sorted_messages)
+      # Create notification with formatted discussion
+      notification = create_notification_prompt(sorted_messages)
                 
-        buffer_data['last_analysis_time'] = current_time
-        buffer_data['messages'] = []  # Clear buffer after analysis
+      buffer_data['last_analysis_time'] = current_time
+      buffer_data['messages'] = []  # Clear buffer after analysis
 
-        # Track notification time for reminders with message_id
-        message_buffer.set_last_notification_time(session_id, message_id)
+      # Track notification time for reminders with message_id
+      message_buffer.set_last_notification_time(session_id, message_id)
 
-        logger.info(f"Sending notification with prompt template for session {session_id}, message {message_id}")
-        return notification
+      logger.info(f"Sending notification with prompt template for session {session_id}, message {message_id}")
+      return notification
       
-      logger.debug("No analysis needed at this time")
-      return {}
-    except Exception as e:
-      logger.error(f"Error processing webhook: {str(e)}", exc_info=True)
-      return {"error": "Internal server error"}              
-  else:
-    logger.info("Error due to incorrect request", exc_info=True)
-    print("Wrong request, get not allowed")
-    return {"message": "Request not allowed"}
+    logger.debug("No analysis needed at this time")
+    return {}
+  except Exception as e:
+    logger.error(f"Error processing webhook: {str(e)}", exc_info=True)
+    return {"error": "Internal server error"}              
   # return {"message": f"Transcript: {segments}"}
 
 @app.get('/webhook/setup-status')
