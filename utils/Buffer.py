@@ -31,26 +31,26 @@ class MessageBuffer:
       logger.info("Triggering cleanup of old sessions")
       self.cleanup_old_sessions()
         
-      with self.lock:
-        if session_id not in self.buffers:
-          logger.info(f"Creating new buffer for session_id: {session_id}")
-          self.buffers[session_id] = {
-            'messages': [],
-            'last_analysis_time': time.time(),
-            'last_activity': current_time,
-            'words_after_silence': 0,
-            'silence_detected': False
-          }
-        else:
-          # Check for silence period
-          time_since_activity = current_time - self.buffers[session_id]['last_activity']
-          if time_since_activity > self.silence_threshold:
-            logger.info(f"Silence period detected for session {session_id}. Time since activity: {time_since_activity:.2f}s")
-            self.buffers[session_id]['silence_detected'] = True
-            self.buffers[session_id]['words_after_silence'] = 0
-            self.buffers[session_id]['messages'] = []  # Clear old messages after silence
-                  
-            self.buffers[session_id]['last_activity'] = current_time
+    with self.lock:
+      if session_id not in self.buffers:
+        logger.info(f"Creating new buffer for session_id: {session_id}")
+        self.buffers[session_id] = {
+          'messages': [],
+          'last_analysis_time': time.time(),
+          'last_activity': current_time,
+          'words_after_silence': 0,
+          'silence_detected': False
+        }
+      else:
+        # Check for silence period
+        time_since_activity = current_time - self.buffers[session_id]['last_activity']
+        if time_since_activity > self.silence_threshold:
+          logger.info(f"Silence period detected for session {session_id}. Time since activity: {time_since_activity:.2f}s")
+          self.buffers[session_id]['silence_detected'] = True
+          self.buffers[session_id]['words_after_silence'] = 0
+          self.buffers[session_id]['messages'] = []  # Clear old messages after silence
+                
+          self.buffers[session_id]['last_activity'] = current_time
                 
     return self.buffers[session_id]
   def cleanup_old_sessions(self):
