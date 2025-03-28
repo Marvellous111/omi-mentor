@@ -96,10 +96,13 @@ def webhook(session_id: str = Body(...), segments: List[Segment] = Body(..., emb
       
     current_time = time.time()
     buffer_data = message_buffer.get_buffer(session_id)
+    if buffer_data:
+      logger.info(f"Created buffer data for session: {session_id}")
+      logger.info(f"Buffer data is: {buffer_data}")
       
     #Process new messages
     logger.info(f"Processing {len(segments)} segments for session {session_id}")
-    for segment in segments:
+    for segment in segment_json:
       if not segment.get('text'):
         logger.debug("skipping empty segment")
         continue
