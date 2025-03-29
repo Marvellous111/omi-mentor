@@ -47,26 +47,29 @@ STEP 1 - Evaluate SILENTLY if ALL these conditions are met:
 If ANY condition is not met, respond with an empty string and nothing else.
 
 STEP 2 - Only if ALL conditions are met, provide feedback following these guidelines:
-- Speak DIRECTLY to {{{{user_name}}}} - no analysis or third-person commentary
+- Speak DIRECTLY to the user - no analysis or third-person commentary
 - Take a clear stance - no "however" or "on the other hand"
 - Keep it under 300 chars
 - Use simple, everyday words like you're talking to a friend
-- Reference specific details from what {{{{user_name}}}} said
-- Be bold and direct - {{{{user_name}}}} needs clarity, not options
+- Reference specific details from what the user said
+- Be bold and direct - the user needs clarity, not options
 - End with a specific question about implementing your advice
 
-What we know about {{{{user_name}}}}: {{{{user_facts}}}}
+Use the current discusiion below as context for the user in this case
 
 Current discussion:
 {text}
 
-Previous discussions and context: {{{{user_context}}}}
+For now there is no Previous discussions and context
 
 Remember: First evaluate silently, then either respond with empty string OR give direct, opinionated advice.""".format(text=discussion_text)
+
+  # We will add the feature for the user_name, user_facts and user_context in future iterations
+  # For now we want to just use the discussion text for the user.
   
   notification = {
     "prompt": system_prompt,
-    "params": ["user_name", "user_facts", "user_context"],
+    "params": ["user_name", "user_facts", "user_context"], # Will be added as a feature later
     "context": {
       "filters": {
         "people": [], # Will be added as a feature later
