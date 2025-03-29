@@ -17,4 +17,4 @@ load_dotenv()
 def get_advice(notification_prompt: dict):
   system_prompt = notification_prompt.get('prompt')
   params = notification_prompt.get('params')
-  
+  return
