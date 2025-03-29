@@ -159,6 +159,8 @@ def webhook(session_id: str = Body(...), segments: List[Segment] = Body(..., emb
                 
       # Create notification with formatted discussion
       notification = create_notification_prompt(sorted_messages)
+      
+      logger.info(f"This notification prompt is necessary for the user yes? {notification}")
                 
       buffer_data['last_analysis_time'] = current_time
       buffer_data['messages'] = []  # Clear buffer after analysis
@@ -168,9 +170,9 @@ def webhook(session_id: str = Body(...), segments: List[Segment] = Body(..., emb
 
       logger.info(f"Sending notification with prompt template for session {session_id}, message {message_id}")
       return notification
-      
-    logger.debug("No analysis needed at this time")
-    return {}
+    else:
+      logger.debug("No analysis needed at this time")
+    return {"message": "heyy, its your mentor"}
   except Exception as e:
     logger.error(f"Error processing webhook: {str(e)}", exc_info=True)
     return {"error": "Internal server error"}              

@@ -69,14 +69,18 @@ Remember: First evaluate silently, then either respond with empty string OR give
     "params": ["user_name", "user_facts", "user_context"],
     "context": {
       "filters": {
-        "people": [],
-        "entities": [],
+        "people": [], # Will be added as a feature later
+        "entities": [],  # Will be added as a feature later
         "topics": topics,
-        "situations": [],
-        "location": [],
-        "urgency": ""
+        "situations": [],  # Will be added as a feature later
+        "location": [],  # Will be added as a feature later
+        "urgency": ""  # Will be added as a feature later
       }
     }
   }
   logger.info("Created notification prompt template")
   return notification
+
+# We need to find where to use the notification prompt is the main thing now.
+# We could edit the notification system prompt to just straight up throw the notification at us? 
+# though it isnt feasible
