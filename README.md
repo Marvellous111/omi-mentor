@@ -56,20 +56,20 @@ Future work is still ongoing to test and make sure the app comes out really good
 
 ## FUTURE WORK
 
--[] Chat Continuity: Talk to mentor in an isolated environment about problems based on the topic mentor gathers from your conversations in realtime.
+- [ ] Chat Continuity: Talk to mentor in an isolated environment about problems based on the topic mentor gathers from your conversations in realtime.
 
--[] Store mentor advice and conversation in a secure database to be used for context and future references where necessary.
+- [ ] Store mentor advice and conversation in a secure database to be used for context and future references where necessary.
 
--[] Build the homepage for the mentor app and host it for first time users of the app to see with setup instructions.
+- [ ] Build the homepage for the mentor app and host it for first time users of the app to see with setup instructions.
 
--[] Build tests for the app using github actions or something else later.
+- [ ] Build tests for the app using github actions or something else later.
 
--[] I will add chat feature for the app as well in omi (in the omi app)
+- [ ] I will add chat feature for the app as well in omi (in the omi app)
 
--[] Change hosting service to amazon ec2 instead of render to get rid of server inactivity when spun down.
+- [ ] Change hosting service to amazon ec2 instead of render to get rid of server inactivity when spun down.
 
--[] Look for api_base_url and api_key_notification for the app and put them inside env with codebase (question on the discord channel can be asked)
+- [ ] Look for api_base_url and api_key_notification for the app and put them inside env with codebase (question on the discord channel can be asked)
 
--[] Create cron job to send notification from mentor to user from time to time (basically creating reminder)
+- [ ] Create cron job to send notification from mentor to user from time to time (basically creating reminder)
 
--[] Implement rate limiter and implement feature to ensure the api isnt used for every little thing.
+- [ ] Implement rate limiter and implement feature to ensure the api isnt used for every little thing.
