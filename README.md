@@ -21,7 +21,7 @@ comments tagged with (from example) are gotten from example
 comments tagged with (not example) are novel
 comments tagged with (perhaps example) are edited example code
 
-Due to quick server deployment to test the code we are making use of render. Later I will migrate to amazon ec2.
+Due to quick server deployment to test the code I am making use of render. Later I will migrate to amazon ec2.
 
 ## HOW TO USE
 
@@ -64,7 +64,7 @@ Future work is still ongoing to test and make sure the app comes out really good
 
 - [] Build tests for the app using github actions or something else later.
 
-- [] We will add chat feature for the app as well in omi (in the omi app)
+- [] I will add chat feature for the app as well in omi (in the omi app)
 
 - [] Change hosting service to amazon ec2 instead of render to get rid of server inactivity when spun down.
 
