@@ -4,7 +4,7 @@ A mentor that advices you and tells you what to do based on your conversations.
 
 ## Project Type
 
-We could use any other framework, but for speed and for parallel development we will use fastAPI
+I could use any other framework, but for speed and for parallel development I will use fastAPI
 
 ### Stack
 
@@ -15,13 +15,13 @@ We could use any other framework, but for speed and for parallel development we 
 
 ## IMPORTANT NOTE
 
-We are relying on the example given to us with a lot of tweaks since it is a good entry point.
+I am relying on the example given to me with a lot of tweaks since it is a good entry point.
 Further work on this app will slowly move away from the example to a more concrete work.
 comments tagged with (from example) are gotten from example
 comments tagged with (not example) are novel
 comments tagged with (perhaps example) are edited example code
 
-Due to quick server deployment to test the code we are making use of render. Later we will migrate to amazon ec2.
+Due to quick server deployment to test the code we are making use of render. Later I will migrate to amazon ec2.
 
 ## HOW TO USE
 
@@ -33,7 +33,7 @@ Due to quick server deployment to test the code we are making use of render. Lat
 
 4. Click on the app if found and install it. App link: ([Omi mentor](https://h.omi.me/apps/01JQBGSHPMWB0H6ER6YSR1JFS0))
 
-5. A homepage will show when installed (due to use of load/render of this homepage is necessary)
+5. A homepage will show when installed (due to use of render this initial load of the homepage is necessary)
 
 6. Once the homepage shows the active session, this means the server has started, you are free to keep refreshing the homepage till you see a json response that looks like this:
 
