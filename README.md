@@ -1,10 +1,17 @@
 # Omi-Grok Mentor App
 
-This project is a fastAPI application
+A mentor that advices you and tells you what to do based on your conversations.
 
-## Project Type: FastAPI
+## Project Type
 
 We could use any other framework, but for speed and for parallel development we will use fastAPI
+
+### Stack
+
+1. FastAPI
+2. Render (for hosting, will migrate to amazon ec2 in future iterations)
+3. Python
+4. Omi for the conversation recording using the app (also device compatible)
 
 ## IMPORTANT NOTE
 
@@ -13,6 +20,8 @@ Further work on this app will slowly move away from the example to a more concre
 comments tagged with (from example) are gotten from example
 comments tagged with (not example) are novel
 comments tagged with (perhaps example) are edited example code
+
+Due to quick server deployment to test the code we are making use of render. Later we will migrate to amazon ec2.
 
 ## FUTURE WORK
 
@@ -24,18 +33,10 @@ comments tagged with (perhaps example) are edited example code
 
 4. Build tests for the app using github actions or something else later.
 
-## HOSTING SERVICE
+5. We will add chat feature for the app as well in omi (in the omi app)
 
-Amazon ec2 or Render will be used for the hosting service.
+6. Change hosting service to amazon ec2 instead of render to get rid of server inactivity when spun down.
 
-Tasks to complete (not to be pushed):
+7. Look for api_base_url and api_key_notification for the app and put them inside env with codebase (question on the discord channel can be asked)
 
-1. Host the platform on either render or ec2 (must not have downtimes) use credit model if needed, coolify is also great for hosting
-
-2. Register the app on the omi app
-
-3. Use the endpoint for the webhook for the transcript url
-
-4. Get the app url for the app and put it in the code
-
-5. Look for api_base_url and api_key_notification for the app and put them inside env with codebase (question on the discord channel can be asked)
+8. Create cron job to send notification from mentor to user from time to time (basically creating reminder)
