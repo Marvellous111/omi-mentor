@@ -53,6 +53,7 @@ class MessageBuffer:
           self.buffers[session_id]['last_activity'] = current_time
                 
     return self.buffers[session_id]
+  
   def cleanup_old_sessions(self):
     logger.info("Starting cleanup of old sessions")
     current_time = time.time()

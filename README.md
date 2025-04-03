@@ -72,4 +72,12 @@ Future work is still ongoing to test and make sure the app comes out really good
 
 - [ ] Create cron job to send notification from mentor to user from time to time (basically creating reminder)
 
-- [ ] Implement rate limiter and implement feature to ensure the api isnt used for every little thing.
+- [ ] Implement rate limiter and implement feature to ensure the api isn't used for every little thing.
+
+## Tasks to do
+
+Create a test link for development as omi-mentor.onrender.app/webhook is now for production where necessary
+The test link will be in a new branch for testing dev called devbranch
+prod branch will be main
+
+we can use render for it

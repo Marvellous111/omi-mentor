@@ -19,7 +19,7 @@ def extract_topics(discussion_text: str) -> list:
   try:
     logger.debug("Sending request to groq(llama-3.1-8b-instant) API")
     response = client.chat.completions.create(
-      model = "llama-3.1-8b-instant", ## Ensure you stay away from models that think
+      model = "llama-3.3-70b-versatile", ## Ensure you stay away from models that think
       messages=[
         {
           "role": "system",
@@ -45,3 +45,6 @@ def extract_topics(discussion_text: str) -> list:
   except Exception as e:
     logger.error(f"Error extracting topics: {str(e)}", exc_info=True)
     return []
+  
+  
+extract_topics("I think drugs are a bad idea")

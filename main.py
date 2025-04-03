@@ -26,6 +26,8 @@ from utils.Buffer import MessageBuffer
 from utils.cleanconversation import create_context, clean_context
 from utils.gettime import get_transcript_on_time
 from data.context import context_list, transcript_segment, unclean_context_list
+from utils.conversation import Conversations
+
 
 app = FastAPI()
 
@@ -57,6 +59,7 @@ comments tagged with (perhaps example) are edited example code
 
 message_buffer = MessageBuffer()
 logger.info(f"Analysis interval set to {END_OF_CONVERSATION_IN_SECONDS} seconds")
+# conversations = Conversations()
 
 '''IMPORTANT NOTE: The thread below hijacks the main thread and stops the app from running. This is not ideal and should be fixed.
 FIX: A simple fix would be to ensure it runs in the background AFTER the app has started.
@@ -79,11 +82,17 @@ def webhook(session_id: str = Body(...), segments: List[Segment] = Body(..., emb
     ## Response is like this: [Segment(text="",...)]
     # We can convert to json? or use tuple like that?
     
+    # time.sleep(4)
+    
+    '''
+    We want to pause the function here to get words for a certain amount of time
+    '''
+    
     segment_json = [segment.model_dump(mode="json") for segment in segments]
     
     print(segment_json)
     logger.info(f"Segments converted to json are: {segment_json}")
-      
+    
     # message_id should be generated if it isnt provided
     if not message_id:
       message_id = f"{session_id}_{int(time.time())}"

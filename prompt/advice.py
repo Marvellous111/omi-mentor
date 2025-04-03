@@ -25,7 +25,7 @@ def get_advice(notification_prompt: dict):
     topics = notification_prompt.get('context')['filters']['topics']
     total_prompt = f"{system_prompt}\nUse the {topics} as a good way to know what the user is talking about as well when giving your advice. Don't forget straight to the point advice. NOTHING ELSE."
     response = client.chat.completions.create(
-      model = "llama-3.1-8b-instant",
+      model = "llama-3.3-70b-versatile",
       messages = [
         {
           "role": "system",
