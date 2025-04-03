@@ -24,7 +24,7 @@ from data.constants import *
 from utils.notifications import *
 from utils.Buffer import MessageBuffer
 from utils.gettime import get_transcript_on_time
-from data.context import context_list, transcript_segment, unclean_context_list
+from data.context import conversations_list, transcript_segment, unclean_context_list
 from utils.conversation import Conversations
 
 
