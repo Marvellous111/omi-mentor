@@ -77,20 +77,13 @@ At the moment though we can remove the notifications for now.
 ## Silence checker for the request when the app starts
 @app.on_event("startup")
 async def startup_event():
-  global silence_task
-  silence_task = asyncio.create_task(conversations.check_silence())
-  logger.info("Silence checker task started")
+  conversations.start_time_thread()
+  logger.info("Time thread started while starting server")
   
 @app.on_event("shutdown")
 async def shutdown_event():
-  global silence_task
-  if silence_task and not silence_task.done():
-    silence_task.cancel()
-    try:
-      await silence_task
-    except asyncio.CancelledError:
-      logger.info("Silence check task successfully cancelled on shutdown.")
-      logger.info("Server shutting down.")
+  conversations.stop_time_thread()
+  logger.info("Stopped time thread, ended server lifespan")
 
 
 @app.post("/webhook")
@@ -137,6 +130,17 @@ async def webhook(session_id: str = Body(...), segments: List[Segment] = Body(..
             return {"message": f"{advice}"}
           else:
             logger.error("An error occured while sending advice")
+        silence_bool = True
+        if segment == segment_json[len(segment_json)-1]:
+          while silence_bool:
+            conversation_current_time = conversations.current_time
+            if conversation_current_time - segment_json[len(segment_json)-1]['end'] <= END_OF_CONVERSATION_IN_SECONDS:
+              continue
+            else:
+              silence_bool = False
+              break
+        else: continue
+      #segment_end_time = segment_json[len(segment_json)-1]['end']
       logger.info(f"Getting full conversation")
       total_conversation = conversations.join_conversation(convo_list)
       logger.info(f"Gotten full conversation from the segments")

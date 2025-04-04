@@ -2,6 +2,7 @@
 import asyncio
 import time
 from typing import Optional
+import threading
 
 ## Imported python packages
 from Logcode import *
@@ -42,6 +43,37 @@ class Conversations:
     self.conversation = ""
     self.notification_sent = False
     self.lock = asyncio.Lock() # For thread-safe updates
+    self.current_time = time.time()
+    self.running = False # Thread flag for control
+    self.time_thread = None
+    
+  def start_time_thread(self):
+    """Start time thread in the background
+    """
+    if not self.running:
+      self.running = True
+      self.time_thread = threading.Thread(target=self.update_time, daemon=True)
+      self.time_thread.start()
+      logger.info("Time thread started")
+  
+  def stop_time_thread(self):
+    """Stoping the time thread running in the background
+    """
+    if self.running:
+      self.running = False
+      if self.time_thread:
+        self.time_thread.join() #This waits for the thread to finish from the main thread
+      logger.info("Time thread stopped")
+  
+  def update_time(self):
+    """Background thread logic to update the current time every second
+    """
+    while self.running:
+      with self.lock:
+        self.current_time = time.time()
+      time.sleep(1.0)
+        
+    
     
   def update(self, transcript_segment: str):
     logger.info(f"Updating the conversation for better context")
