@@ -39,12 +39,10 @@ def extract_topics(discussion_text: str) -> list:
     print(response_text)
     topics = json.loads(response_text)
     logger.info(f"Successfully extracted {len(topics)} topics: {topics}")
+    return topics
   except json.JSONDecodeError as e:
-    logger.error(f"Failed to parse OpenAI response as JSON: {str(e)}", exc_info=True)
+    logger.error(f"Failed to parse Groq response as JSON: {str(e)}", exc_info=True)
     return []
   except Exception as e:
     logger.error(f"Error extracting topics: {str(e)}", exc_info=True)
     return []
-  
-  
-extract_topics("I think drugs are a bad idea")
