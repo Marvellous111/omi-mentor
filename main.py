@@ -130,7 +130,7 @@ async def webhook(session_id: str = Body(...), segments: List[Segment] = Body(..
             return {"message": f"{advice}"}
           else:
             logger.error("An error occured while sending advice")
-        silence_bool = True
+        silence_bool = conversations.running
         if segment == segment_json[len(segment_json)-1]:
           while silence_bool:
             conversation_current_time = conversations.current_time
