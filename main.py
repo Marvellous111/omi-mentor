@@ -135,8 +135,10 @@ async def webhook(session_id: str = Body(...), segments: List[Segment] = Body(..
           while silence_bool:
             conversation_current_time = conversations.current_time
             if conversation_current_time - segment_json[len(segment_json)-1]['end'] <= END_OF_CONVERSATION_IN_SECONDS:
+              logger.info("Silence period not reached")
               continue
             else:
+              logger.info("Silence period reached")
               silence_bool = False
               break
         else: continue

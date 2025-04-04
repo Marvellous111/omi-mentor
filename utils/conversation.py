@@ -71,6 +71,7 @@ class Conversations:
     while self.running:
       with self.lock:
         self.current_time = time.time()
+        logger.info(f"Current time is {self.current_time}")
       time.sleep(1.0)
         
     
