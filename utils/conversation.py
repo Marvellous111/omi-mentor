@@ -48,8 +48,9 @@ class Conversations:
     self.conversations.append(transcript_segment)
     self.last_request_time = time.time()
     self.notification_sent = False
+    return self.conversations
     
-  def should_interrupt(self, transcript_segment: str) -> bool:
+  def should_interrupt(self) -> bool:
     logger.info(f"Starting interrupt function")
     try:
       logger.debug(f"Sending request to groq API")
@@ -73,7 +74,7 @@ You are:
 Using the three situational guidelines above you can guess other possible situations that require interruption and others that don't require interruption.
 This is the conversation for you to go through to make your assessment: {transcript_segment}
 Your OUTPUT text should either be INTERRUPT or NOINTERRUPT
-IT MUST BE IN CAPS""".format(transcript_segment=transcript_segment)
+IT MUST BE IN CAPS""".format(transcript_segment=self.conversations)
 
       response = client.chat.completions.create(
         model = AI_MODEL,

@@ -62,6 +62,8 @@ message_buffer = MessageBuffer()
 logger.info(f"Analysis interval set to {END_OF_CONVERSATION_IN_SECONDS} seconds")
 conversations = Conversations()
 
+#########
+
 '''IMPORTANT NOTE: The thread below hijacks the main thread and stops the app from running. This is not ideal and should be fixed.
 FIX: A simple fix would be to ensure it runs in the background AFTER the app has started.
 A condition could be after a segment is gotten from the transcript, then the thread starts.
@@ -92,25 +94,20 @@ async def shutdown_event():
 
 
 @app.post("/webhook")
-def webhook(session_id: str = Body(...), segments: List[Segment] = Body(..., embed=True)):
+async def webhook(session_id: str = Body(...), segments: List[Segment] = Body(..., embed=True)):
   logger.info("Recieved webhook POST request")
   try:
     message_id = None
     
-    print(segments) ## At the moment logs shows the sesgment being returned in a list of a tuple
+    print(segments) ## At the moment logs shows the segment being returned in a list of a tuple
     ## Response is like this: [Segment(text="",...)]
     # We can convert to json? or use tuple like that?
-    
-    # time.sleep(4)
-    
-    '''
-    We want to pause the function here to get words for a certain amount of time
-    '''
     
     segment_json = [segment.model_dump(mode="json") for segment in segments]
     
     print(segment_json)
     logger.info(f"Segments converted to json are: {segment_json}")
+  
     
     # message_id should be generated if it isnt provided
     if not message_id:
@@ -122,7 +119,23 @@ def webhook(session_id: str = Body(...), segments: List[Segment] = Body(..., emb
     if not session_id:
       logger.error("No session_id provided in request")
       return {"message": "No session_id provided"}
-      
+    
+    async with conversations.lock:
+      for segment in segment_json:
+        transcript_text = segment['text']
+        conversation_list = conversations.update(transcript_text)
+        #interrupt_state = conversations.should_interrupt()
+        if conversations.should_interrupt() == True:
+          logger.info(f"AI interrupting: Interrupting the conversation")
+          logger.info(f"Creating the notification prompt early")
+          notification = create_notification_prompt(conversation_list)
+          logger.info(f"Sending notification prompt template for advice")
+          advice = get_advice(notification)
+          if advice:
+            return {"message": f"{advice}"}
+          else:
+            logger.error("An error occured while sending advice")
+    
     current_time = time.time()
     buffer_data = message_buffer.get_buffer(session_id)
     if buffer_data:
@@ -188,8 +201,6 @@ def webhook(session_id: str = Body(...), segments: List[Segment] = Body(..., emb
                 
       # Create notification with formatted discussion
       notification = create_notification_prompt(sorted_messages)
-      
-      #logger.info(f"This notification prompt is necessary for the user yes? {notification}")
                 
       buffer_data['last_analysis_time'] = current_time
       buffer_data['messages'] = []  # Clear buffer after analysis
