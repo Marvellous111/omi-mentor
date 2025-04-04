@@ -75,15 +75,15 @@ At the moment though we can remove the notifications for now.
 # reminder_thread.start()
 
 ## Silence checker for the request when the app starts
-@app.on_event("startup")
-async def startup_event():
-  conversations.start_time_thread()
-  logger.info("Time thread started while starting server")
+# @app.on_event("startup")
+# async def startup_event():
+#   conversations.start_time_thread()
+#   logger.info("Time thread started while starting server")
   
-@app.on_event("shutdown")
-async def shutdown_event():
-  conversations.stop_time_thread()
-  logger.info("Stopped time thread, ended server lifespan")
+# @app.on_event("shutdown")
+# async def shutdown_event():
+#   conversations.stop_time_thread()
+#   logger.info("Stopped time thread, ended server lifespan")
 
 
 @app.post("/webhook")
@@ -115,6 +115,7 @@ async def webhook(session_id: str = Body(...), segments: List[Segment] = Body(..
     
     with conversations.lock:
       convo_list = []
+      conversations.start_time_thread()
       for segment in segment_json:
         transcript_text = segment['text']
         conversation_list = conversations.update(transcript_text)
@@ -139,6 +140,7 @@ async def webhook(session_id: str = Body(...), segments: List[Segment] = Body(..
               continue
             else:
               logger.info("Silence period reached")
+              conversations.stop_time_thread()
               silence_bool = False
               break
         else: continue
