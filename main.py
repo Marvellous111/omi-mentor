@@ -141,7 +141,8 @@ async def webhook(session_id: str = Body(...), segments: List[Segment] = Body(..
       total_conversation = conversations.join_conversation(convo_list)
       logger.info(f"Gotten full conversation from the segments")
       print(f"Total conversation is: {total_conversation}")
-      if silence_task == True:
+      silence = True
+      if silence == True:
         current_time = time.time()
         buffer_data = message_buffer.get_buffer(session_id)
         if buffer_data:

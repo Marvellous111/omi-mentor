@@ -74,7 +74,7 @@ You are:
 Using the three situational guidelines above you can guess other possible situations that require interruption and others that don't require interruption.
 This is the conversation for you to go through to make your assessment: {transcript_segment}
 Your OUTPUT text should either be INTERRUPT or NOINTERRUPT
-IT MUST BE IN CAPS""".format(transcript_segment=self.conversations)
+IT MUST BE IN CAPS""".format(transcript_segment=self.conversation)
 
       response = client.chat.completions.create(
         model = AI_MODEL,
@@ -85,7 +85,7 @@ IT MUST BE IN CAPS""".format(transcript_segment=self.conversations)
           },
           {
             "role": "user",
-            "content": f"Please tell me if it's necessary to interrupt this discussion or not: {transcript_segment}"
+            "content": f"Please tell me if it's necessary to interrupt this discussion or not: {self.conversation}"
           }
         ],
         max_tokens=150,
@@ -110,6 +110,7 @@ IT MUST BE IN CAPS""".format(transcript_segment=self.conversations)
   async def check_silence(self):
     logger.info("Checking for silence in the conversation")
     while True:
+      logger.info("Silence checking loop")
       async with self.lock:
         current_time = time.time()
         time_since_last_transcript = current_time - self.last_request_time
@@ -119,6 +120,7 @@ IT MUST BE IN CAPS""".format(transcript_segment=self.conversations)
           return True
         elif time_since_last_transcript < self.silence_threshold and not self.notification_sent:
           ## We could log here but we dont want spam every second
+          logger.info("Silence not detected - Conversation ongoing")
           return False
         elif time_since_last_transcript >= self.silence_threshold and not self.notification_sent:
           logging.info("Silence detected - Conversation ended. Sending notification again")

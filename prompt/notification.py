@@ -21,7 +21,7 @@ def create_notification_prompt(message: str) -> dict:
   Returns:
       dict: A dictionary for the notification template
   """
-  logger.info(f"Creating notification prompt for {len(messages)} messages")
+  logger.info(f"Creating notification prompt for {len(message)} messages")
   
   #Format the discussion with speaker labels (from example)
   # formatted_discussion = []
