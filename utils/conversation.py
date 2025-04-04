@@ -88,7 +88,7 @@ IT MUST BE IN CAPS""".format(transcript_segment=self.conversations)
             "content": f"Please tell me if it's necessary to interrupt this discussion or not: {transcript_segment}"
           }
         ],
-        max_token=150,
+        max_tokens=150,
         temperature=0.3
       )
       logger.info("Getting interruption status from conversation")
