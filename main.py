@@ -113,7 +113,7 @@ async def webhook(session_id: str = Body(...), segments: List[Segment] = Body(..
       logger.error("No session_id provided in request")
       return {"message": "No session_id provided"}
     
-    async with conversations.lock:
+    with conversations.lock:
       convo_list = []
       for segment in segment_json:
         transcript_text = segment['text']
