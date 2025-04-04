@@ -42,7 +42,7 @@ class Conversations:
     self.silence_time = silence_threshold
     self.conversation = ""
     self.notification_sent = False
-    self.lock = asyncio.Lock() # For thread-safe updates
+    self.lock = threading.Lock() # For thread-safe updates
     self.current_time = time.time()
     self.running = False # Thread flag for control
     self.time_thread = None
