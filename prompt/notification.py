@@ -12,7 +12,7 @@ from prompt.client import client
 from prompt.extracttopic import extract_topics
 from data.constants import AI_MODEL
 
-def create_notification_prompt(messages: list) -> dict:
+def create_notification_prompt(message: str) -> dict:
   """Create notification with prompt template
 
   Args:
@@ -24,16 +24,16 @@ def create_notification_prompt(messages: list) -> dict:
   logger.info(f"Creating notification prompt for {len(messages)} messages")
   
   #Format the discussion with speaker labels (from example)
-  formatted_discussion = []
-  for msg in messages:
-    speaker = "{{{user_name}}}" if msg.get('is_user') else "other"
-    formatted_discussion.append(f"{msg['text']} ({speaker})")
+  # formatted_discussion = []
+  # for msg in messages:
+  #   speaker = "{{{user_name}}}" if msg.get('is_user') else "other"
+  #   formatted_discussion.append(f"{msg['text']} ({speaker})")
     
-  discussion_text = "\n".join(formatted_discussion)
-  logger.debug(f"formatted discussion length: {len(discussion_text)} characters")
+  # discussion_text = "\n".join(formatted_discussion)
+  # logger.debug(f"formatted discussion length: {len(discussion_text)} characters")
   
   # Now lets extract topics from the discussion
-  topics = extract_topics(discussion_text)
+  topics = extract_topics(message)
   
   system_prompt = """ You are {{{{user_name}}}}'s personal AI mentor. Your FIRST task is to determine if this conversation warrants interruption. 
 
@@ -63,7 +63,7 @@ Current discussion:
 
 For now there is no Previous discussions and context
 
-Remember: First evaluate silently, then either respond with empty string OR give direct, opinionated advice.""".format(text=discussion_text)
+Remember: First evaluate silently, then either respond with empty string OR give direct, opinionated advice.""".format(text=message)
 
   # We will add the feature for the user_name, user_facts and user_context in future iterations
   # For now we want to just use the discussion text for the user.

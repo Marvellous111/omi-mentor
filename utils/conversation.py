@@ -108,6 +108,7 @@ IT MUST BE IN CAPS""".format(transcript_segment=self.conversations)
     
     
   async def check_silence(self):
+    logger.info("Checking for silence in the conversation")
     while True:
       async with self.lock:
         current_time = time.time()
@@ -124,3 +125,13 @@ IT MUST BE IN CAPS""".format(transcript_segment=self.conversations)
           self.notification_sent = False
           return True
       await asyncio.sleep(1.0)
+      
+  def join_conversation(self, conversation_list: list) -> str:
+    """Function to join the conversation list into a single string
+    """
+    convo = ""
+    for conversation in conversation_list:
+      convo += conversation + " "
+    
+    self.conversation = convo.strip()
+    return self.conversation
