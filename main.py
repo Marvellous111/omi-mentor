@@ -121,9 +121,11 @@ async def webhook(session_id: str = Body(...), segments: List[Segment] = Body(..
       return {"message": "No session_id provided"}
     
     async with conversations.lock:
+      convo_list = []
       for segment in segment_json:
         transcript_text = segment['text']
         conversation_list = conversations.update(transcript_text)
+        convo_list = conversation_list
         #interrupt_state = conversations.should_interrupt()
         if conversations.should_interrupt() == True:
           logger.info(f"AI interrupting: Interrupting the conversation")
@@ -135,6 +137,7 @@ async def webhook(session_id: str = Body(...), segments: List[Segment] = Body(..
             return {"message": f"{advice}"}
           else:
             logger.error("An error occured while sending advice")
+      print(convo_list)
     
     current_time = time.time()
     buffer_data = message_buffer.get_buffer(session_id)
