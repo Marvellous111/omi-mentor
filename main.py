@@ -1,11 +1,12 @@
 #Framework imports
-from fastapi import FastAPI, Request, Body
+from fastapi import FastAPI, Request, Body, BackgroundTasks
 from pydantic import BaseModel
 from fastapi.requests import Request
 from fastapi.middleware.cors import CORSMiddleware
 
 #Python packages imports
 from pprint import pprint
+import asyncio
 import logging
 import os
 from pathlib import Path
@@ -14,6 +15,7 @@ import time
 from datetime import datetime
 import threading
 from typing import List, Optional
+from contextlib import asynccontextmanager
 
 #File/Module imports
 from data.model import Segment, RequestModel
@@ -23,8 +25,8 @@ from Logcode import *
 from data.constants import *
 from utils.notifications import *
 from utils.Buffer import MessageBuffer
-from utils.gettime import get_transcript_on_time
-from data.context import conversations_list, transcript_segment, unclean_context_list
+#from utils.gettime import get_transcript_on_time
+#from data.context import conversations_list, transcript_segment, unclean_context_list
 from utils.conversation import Conversations
 
 
@@ -58,7 +60,7 @@ comments tagged with (perhaps example) are edited example code
 
 message_buffer = MessageBuffer()
 logger.info(f"Analysis interval set to {END_OF_CONVERSATION_IN_SECONDS} seconds")
-# conversations = Conversations()
+conversations = Conversations()
 
 '''IMPORTANT NOTE: The thread below hijacks the main thread and stops the app from running. This is not ideal and should be fixed.
 FIX: A simple fix would be to ensure it runs in the background AFTER the app has started.
@@ -69,6 +71,24 @@ At the moment though we can remove the notifications for now.
 # # This starts the reminder check loop in the background, message_buffer MUST be initialized first though
 # reminder_thread = threading.Thread(target=reminder_check_loop(message_buffer), daemon=True)
 # reminder_thread.start()
+
+## Silence checker for the request when the app starts
+@app.on_event("startup")
+async def startup_event():
+  global silence_task
+  silence_task = asyncio.create_task(conversations.check_silence())
+  logger.info("Silence checker task started")
+  
+@app.on_event("shutdown")
+async def shutdown_event():
+  global silence_task
+  if silence_task and not silence_task.done():
+    silence_task.cancel()
+    try:
+      await silence_task
+    except asyncio.CancelledError:
+      logger.info("Silence check task successfully cancelled on shutdown.")
+      logger.info("Server shutting down.")
 
 
 @app.post("/webhook")

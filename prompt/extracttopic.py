@@ -9,6 +9,7 @@ from dotenv import load_dotenv
 #File/Modules imports
 from prompt.client import client
 from Logcode import *
+from data.constants import AI_MODEL
 
 load_dotenv()
 
@@ -17,9 +18,9 @@ def extract_topics(discussion_text: str) -> list:
   logger.info("Starting topic extraction")
   logger.debug(f"Discussion text length: {len(discussion_text)} characters")
   try:
-    logger.debug("Sending request to groq(llama-3.1-8b-instant) API")
+    logger.debug("Sending request to groq API")
     response = client.chat.completions.create(
-      model = "llama-3.3-70b-versatile", ## Ensure you stay away from models that think
+      model = AI_MODEL, ## Ensure you stay away from models that think
       messages=[
         {
           "role": "system",

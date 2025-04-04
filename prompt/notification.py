@@ -10,6 +10,7 @@ from dotenv import load_dotenv
 from Logcode import *
 from prompt.client import client
 from prompt.extracttopic import extract_topics
+from data.constants import AI_MODEL
 
 def create_notification_prompt(messages: list) -> dict:
   """Create notification with prompt template
@@ -55,7 +56,7 @@ STEP 2 - Only if ALL conditions are met, provide feedback following these guidel
 - Be bold and direct - the user needs clarity, not options
 - End with a specific question about implementing your advice
 
-Use the current discusiion below as context for the user in this case
+Use the current discusion below as context for the user in this case
 
 Current discussion:
 {text}

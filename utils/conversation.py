@@ -1,11 +1,13 @@
 ## Imported inbuilt python modules
-#import time
-import os # Dunno if necessary
+import asyncio
+import time
+from typing import Optional
 
 ## Imported python packages
+from Logcode import *
 from data.constants import *
 from data.context import *
-
+from prompt.client import client
 from utils.Buffer import MessageBuffer
 
 
@@ -25,15 +27,6 @@ def create_context(target_transcript: dict, target_context_list: list) -> list:
   target_context_list.append(transcript_dict)
   return target_context_list
 
-def clean_context(target_context_list: list) -> list:
-  '''Remove the context in a target context list that is not needed
-  NOTE: This feature means that the first session_id captured will be the session_id we will run with.
-  '''
-  for conversation_contexts in range(0, len(target_context_list)):
-    if target_context_list[conversation_contexts]["session_id"] != conversation_contexts[0]["session_id"]:
-      target_context_list.remove(target_context_list[conversation_contexts])
-  return target_context_list
-
 class Conversations:
   """Conversation class to save conversations for the AI as context without outrightly using a db
   It works by continously storing the trasncripts inside a list and checking the server requests
@@ -42,32 +35,91 @@ class Conversations:
   
   Perhaps it should also feature an interruption method? to get the context of an argument and interrupt where necessary
   """
-  def __init__(self):
+  def __init__(self, silence_threshold=END_OF_CONVERSATION_IN_SECONDS):
+    self.last_request_time = time.time()
     self.conversations = conversations_list
-    self.silence_time = END_OF_CONVERSATION_IN_SECONDS
+    self.silence_time = silence_threshold
     self.conversation = ""
+    self.notification_sent = False
+    self.lock = asyncio.Lock() # For thread-safe updates
     
+  def update(self, transcript_segment: str):
+    logger.info(f"Updating the conversation for better context")
+    self.conversations.append(transcript_segment)
+    self.last_request_time = time.time()
+    self.notification_sent = False
     
-  def save_conversations(self, conversations_text: str):
-    """Add conversations to the conversations list for context
+  def should_interrupt(self, transcript_segment: str) -> bool:
+    logger.info(f"Starting interrupt function")
+    try:
+      logger.debug(f"Sending request to groq API")
+      system_prompt = """
+You are a conversation specialist. 
+Your job is to look at the conversation the user gives and check if it needs an interruption.
+Have an added focus on whether the conversation sounds like an argument. (Arguments should be priority so most of the time you should interrupt an argument)
+If the conversation is deemed necessary to be interrupted then ONLY respond with the word: INTERRUPT
+If the conversation is not deemed necessary to be interrupted then simply respond with the word: NOINTERRUPT
 
-    Args:
-        conversations_text (str): This is the transcript text for the conversation gotten from omi
-    """
-    self.conversations.append(conversations_text)
-    
-    
-    
-# [##### ##### ##### #### #### ##### ##### #####] ...
-# 1 - 4 6 - 7 8-9   11-14 19... time of transcript being taken, can be scrapped
+Example of situations that could require interruption:
+- When the user is getting a fact wrong, it warrants interruption to correct the user
+- When the user is in an argument or a heated argument, IT ABSOLUTELY WARRANTS INTERRUPTION. It is important to understand what the argument is about, why it is ocurring and how it can be resolved. DO NOT PICK A SIDE UNLESS ABSOLUTELY SURE OF WHO IS AT FAULT
+- When a conversation by the user seems like it needs urgent help it warrants interruption.
 
-# Server has breaks apparently
+You are:
+- A mentor where needed.
+- A friend where needed.
+- A confidant where needed.
 
-'''
-I can thread the function in main.py so that we can then get control over the time stopping if needed
-Since we have the time intervals
+Using the three situational guidelines above you can guess other possible situations that require interruption and others that don't require interruption.
+This is the conversation for you to go through to make your assessment: {transcript_segment}
+Your OUTPUT text should either be INTERRUPT or NOINTERRUPT
+IT MUST BE IN CAPS""".format(transcript_segment=transcript_segment)
 
-We can check if the time intervals between two segments gotten is greater than silence time.
-We can stop the appending to the list
-'''
+      response = client.chat.completions.create(
+        model = AI_MODEL,
+        messages = [
+          {
+            "role": "system",
+            "content": system_prompt
+          },
+          {
+            "role": "user",
+            "content": f"Please tell me if it's necessary to interrupt this discussion or not: {transcript_segment}"
+          }
+        ],
+        max_token=150,
+        temperature=0.3
+      )
+      logger.info("Getting interruption status from conversation")
+      response_text = response.choices[0].message.content
+      logger.debug(f"Response from groq API: {response_text}")
+      logger.info(f"Successfully gotten interruption status.")
+      if response_text == "INTERRUPT":
+        return True
+      elif response_text == "NOINTERRUPT":
+        return False
+      else:
+        logger.error("INCORRECT OUTPUT GOTTEN")
+        return False
+    except Exception as e:
+      logger.error(f"An error occured: {str(e)}", exc_info=True)
+      return False
     
+    
+  async def check_silence(self):
+    while True:
+      async with self.lock:
+        current_time = time.time()
+        time_since_last_transcript = current_time - self.last_request_time
+        if time_since_last_transcript >= self.silence_threshold and self.notification_sent == False:
+          logging.info("Silence detected - Conversation ended. Sending notification")
+          self.notification = True
+          return True
+        elif time_since_last_transcript < self.silence_threshold and not self.notification_sent:
+          ## We could log here but we dont want spam every second
+          return False
+        elif time_since_last_transcript >= self.silence_threshold and not self.notification_sent:
+          logging.info("Silence detected - Conversation ended. Sending notification again")
+          self.notification_sent = False
+          return True
+      await asyncio.sleep(1.0)
