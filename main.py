@@ -116,6 +116,8 @@ async def webhook(session_id: str = Body(...), segments: List[Segment] = Body(..
     with conversations.lock:
       convo_list = []
       logger.info("Time thread started while collecting segments of transcripts")
+      logger.info(f"Segments collected form transcripts, total count: {len(segment_json)}")
+      print(f"Segments in list: {segment_json}")
       for segment in segment_json:
         transcript_text = segment['text']
         conversation_list = conversations.update(transcript_text)
@@ -135,8 +137,8 @@ async def webhook(session_id: str = Body(...), segments: List[Segment] = Body(..
         if segment == segment_json[len(segment_json)-1]:
           while silence_bool:
             conversation_current_time = conversations.get_count()
-            if conversation_current_time - segment_json[len(segment_json)-1]['end'] <= END_OF_CONVERSATION_IN_SECONDS:
-              logger.info(f"Difference in seconds: {conversation_current_time - segment_json[len(segment_json)-1]['end']}s")
+            if conversation_current_time - segment['end'] <= END_OF_CONVERSATION_IN_SECONDS:
+              logger.info(f"Difference in seconds: {conversation_current_time - segment['end']}s")
               logger.info("Silence period not reached")
               continue
             else:
