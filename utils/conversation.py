@@ -69,7 +69,9 @@ class Conversations:
     """Reset the count timer for the thread to begin count from 0 again
     """
     with self.lock:
+      logger.info("Reseting the count timer")
       self.current_count = 0
+      logger.info(f"The current_count: {self.current_count}")
         
     
   def update(self, transcript_segment: str):
