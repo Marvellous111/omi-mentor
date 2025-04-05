@@ -19,7 +19,7 @@ def extract_topics(discussion_text: str) -> list:
   try:
     logger.debug("Sending request to groq(llama-3.1-8b-instant) API")
     response = client.chat.completions.create(
-      model = "llama-3.3-70b-versatile", ## Ensure you stay away from models that think
+      model = "qwen-2.5-32b", ## Ensure you stay away from models that think
       messages=[
         {
           "role": "system",
