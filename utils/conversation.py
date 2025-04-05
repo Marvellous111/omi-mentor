@@ -58,6 +58,18 @@ class Conversations:
         self.current_count += 1
         logger.info(f"Current time is {self.current_count}")
       time.sleep(1)
+      
+  def get_count(self):
+    """Get the count timer after the thread starts
+    """
+    with self.lock:
+      return self.current_count
+    
+  def reset_count(self):
+    """Reset the count timer for the thread to begin count from 0 again
+    """
+    with self.lock:
+      self.current_count = 0
         
     
   def update(self, transcript_segment: str):
