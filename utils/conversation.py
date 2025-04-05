@@ -12,22 +12,6 @@ from prompt.client import client
 from utils.Buffer import MessageBuffer
 
 
-def create_context(target_transcript: dict, target_context_list: list) -> list:
-  '''Append a target context list with a target transcript dict with the same session_id
-  '''
-  session_id = target_transcript["session_id"]
-  for segment in target_transcript:
-    session_id = segment["session_id"]
-    speaker = segment["speaker"]
-    text = segment["text"]
-    transcript_dict = {
-      "session_id": session_id,
-      "speaker": speaker,
-      "text": text
-    }
-  target_context_list.append(transcript_dict)
-  return target_context_list
-
 class Conversations:
   """Conversation class to save conversations for the AI as context without outrightly using a db
   It works by continously storing the trasncripts inside a list and checking the server requests
@@ -43,38 +27,38 @@ class Conversations:
     self.conversation = ""
     self.notification_sent = False
     self.lock = threading.Lock() # For thread-safe updates
-    self.current_time = time.time()
+    self.current_count = 0
     self.running = False # Thread flag for control
-    self.time_thread = None
+    self.count_thread = None
     
-  def start_time_thread(self):
+  def start_count_thread(self):
     """Start time thread in the background
     """
     if not self.running:
       self.running = True
-      self.time_thread = threading.Thread(target=self.update_time, daemon=True)
-      self.time_thread.start()
+      self.count_thread = threading.Thread(target=self._update_count, daemon=True)
+      self.count_thread.start()
       logger.info("Time thread started")
   
-  def stop_time_thread(self):
+  def stop_count_thread(self):
     """Stoping the time thread running in the background
     """
     if self.running:
+      if self.count_thread:
+        self.count_thread.join() #This waits for the thread to finish from the main thread
+      self.current_count = 0  # Return count to the default (0)
       self.running = False
-      if self.time_thread:
-        self.time_thread.join() #This waits for the thread to finish from the main thread
       logger.info("Time thread stopped")
   
-  def update_time(self):
+  def _update_count(self):
     """Background thread logic to update the current time every second
     """
     while self.running:
       with self.lock:
-        self.current_time = time.time()
-        logger.info(f"Current time is {self.current_time}")
-      time.sleep(1.0)
+        self.current_count += 1
+        logger.info(f"Current time is {self.current_count}")
+      time.sleep(1)
         
-    
     
   def update(self, transcript_segment: str):
     logger.info(f"Updating the conversation for better context")

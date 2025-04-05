@@ -77,12 +77,12 @@ At the moment though we can remove the notifications for now.
 ## Silence checker for the request when the app starts
 # @app.on_event("startup")
 # async def startup_event():
-#   conversations.start_time_thread()
+#   conversations.start_count_thread()
 #   logger.info("Time thread started while starting server")
   
 # @app.on_event("shutdown")
 # async def shutdown_event():
-#   conversations.stop_time_thread()
+#   conversations.stop_count_thread()
 #   logger.info("Stopped time thread, ended server lifespan")
 
 
@@ -112,7 +112,7 @@ async def webhook(session_id: str = Body(...), segments: List[Segment] = Body(..
     if not session_id:
       logger.error("No session_id provided in request")
       return {"message": "No session_id provided"}
-    conversations.start_time_thread()
+    conversations.start_count_thread()
     with conversations.lock:
       convo_list = []
       logger.info("Time thread started while collecting segments of trasncripts")
@@ -134,13 +134,14 @@ async def webhook(session_id: str = Body(...), segments: List[Segment] = Body(..
         silence_bool = conversations.running
         if segment == segment_json[len(segment_json)-1]:
           while silence_bool:
-            conversation_current_time = conversations.current_time
+            conversation_current_time = conversations.current_count
             if conversation_current_time - segment_json[len(segment_json)-1]['end'] <= END_OF_CONVERSATION_IN_SECONDS:
+              logger.info(f"Difference in seconds: {conversation_current_time - segment_json[len(segment_json)-1]['end']}s")
               logger.info("Silence period not reached")
               continue
             else:
               logger.info("Silence period reached")
-              conversations.stop_time_thread()
+              conversations.stop_count_thread()
               silence_bool = False
               break
         else: continue
