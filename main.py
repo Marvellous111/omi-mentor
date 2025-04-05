@@ -117,7 +117,8 @@ async def webhook(session_id: str = Body(...), segments: List[Segment] = Body(..
       convo_list = []
       logger.info("Time thread started while collecting segments of transcripts")
       logger.info(f"Segments collected form transcripts, total count: {len(segment_json)}")
-      print(f"Segments in list: {segment_json}")
+      logger.info(f"Segments in list: {segment_json}")
+      logger.info(f"Current time right now: {conversations.get_count()}")
       for segment in segment_json:
         transcript_text = segment['text']
         conversation_list = conversations.update(transcript_text)
