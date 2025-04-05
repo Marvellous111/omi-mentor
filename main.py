@@ -112,6 +112,7 @@ async def webhook(session_id: str = Body(...), segments: List[Segment] = Body(..
     if not session_id:
       logger.error("No session_id provided in request")
       return {"message": "No session_id provided"}
+    conversations.reset_count()
     with conversations.lock:
       convo_list = []
       logger.info("Time thread started while collecting segments of transcripts")
