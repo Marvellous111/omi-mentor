@@ -155,7 +155,7 @@ IT MUST BE IN CAPS""".format(transcript_segment=self.conversation)
     """
     while True:
       try:
-        pseudo_conversations = await asyncio.wait_for(self.conversation_queue.get(), timeout=self.silence_time)
+        pseudo_conversations = await asyncio.wait_for(self.conversation_queue.get(), timeout=self.silence_time+2)
         self.conversations.append(pseudo_conversations)
         logger.info(f"Received transcript segment from queue: {self.conversations}")
         
