@@ -156,7 +156,7 @@ IT MUST BE IN CAPS""".format(transcript_segment=self.conversation)
     while True:
       try:
         self.conversations = await asyncio.wait_for(self.conversation_queue.get(), timeout=self.silence_time)
-        logger.info("Recieved transcript segment from queue")
+        logger.info(f"Recieved transcript segment from queue: {self.conversations}")
         
         joined_conversation = self.join_conversation_from_transcript(self.conversations)
         logger.info(f"Joined conversation to check for interruption")
@@ -179,6 +179,7 @@ IT MUST BE IN CAPS""".format(transcript_segment=self.conversation)
     """
     logger.info("Adding the transcript segment to queue")
     await self.conversation_queue.put(transcript_segment)
+    logger.info(f"Conversation queue: {self.conversation_queue}")
     logger.info("Successfully added segment to queue")
 
   async def flush_queue(self):
