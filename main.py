@@ -7,18 +7,14 @@ from fastapi.middleware.cors import CORSMiddleware
 #Python packages imports
 from pprint import pprint
 import asyncio
-import logging
-import os
-from pathlib import Path
-import requests
 import time
 from datetime import datetime
-import threading
+# import threading
 from typing import List, Optional
-from contextlib import asynccontextmanager
+# from contextlib import asynccontextmanager
 
 #File/Module imports
-from data.model import Segment, RequestModel
+from data.model import Segment
 from prompt.notification import *
 from prompt.advice import *
 from Logcode import *
@@ -62,7 +58,7 @@ message_buffer = MessageBuffer()
 logger.info(f"Analysis interval set to {END_OF_CONVERSATION_IN_SECONDS} seconds")
 conversations = Conversations()
 
-#########
+''''''
 
 '''IMPORTANT NOTE: The thread below hijacks the main thread and stops the app from running. This is not ideal and should be fixed.
 FIX: A simple fix would be to ensure it runs in the background AFTER the app has started.
@@ -74,16 +70,17 @@ At the moment though we can remove the notifications for now.
 # reminder_thread = threading.Thread(target=reminder_check_loop(message_buffer), daemon=True)
 # reminder_thread.start()
 
-## Silence checker for the request when the app starts
-# @app.on_event("startup")
-# async def startup_event():
-#   conversations.start_count_thread()
-#   logger.info("Time thread started while starting server")
+# Silence checker for the request when the app starts
+@app.on_event("startup")
+async def startup_event():
+  asyncio.create_task(conversations.transcript_worker())
+  logger.info("Asyncio streaming data task started")
   
 # @app.on_event("shutdown")
 # async def shutdown_event():
 #   conversations.stop_count_thread()
 #   logger.info("Stopped time thread, ended server lifespan")
+
 
 
 pseudo_segment_list = []
@@ -102,6 +99,7 @@ async def webhook(session_id: str = Body(...), segments: List[Segment] = Body(..
     
     for segment in segment_json:
       pseudo_segment_list.append(segment)
+      await conversations.put_transcript_in_queue(segment)
   
     # message_id should be generated if it isnt provided
     if not message_id:
@@ -117,56 +115,88 @@ async def webhook(session_id: str = Body(...), segments: List[Segment] = Body(..
     
     full_conversation_finish = False
     
-    with conversations.lock:
-      convo_list = []
-      logger.info("Time thread started while collecting segments of transcripts")
-      logger.info(f"Segments collected form transcripts, total count: {len(segment_json)}")
-      logger.info(f"Segments in list: {segment_json}")
-      #pseudo_segment_list = segment_json
-      for segment in segment_json:
-        transcript_text = segment['text']
-        conversation_list = conversations.update(transcript_text)
-        convo_list = conversation_list
-        if conversations.should_interrupt() == True:
-          logger.info(f"AI interrupting: Interrupting the conversation")
-          logger.info(f"Creating the notification prompt early")
-          notification = create_notification_prompt(conversation_list)
-          logger.info(f"Sending notification prompt template for advice")
-          advice = get_advice(notification)
-          if advice:
-            return {"message": f"{advice}"}
-          else:
-            logger.error("An error occured while sending advice")
-        
-        if segment == pseudo_segment_list[len(segment_json)-1]:
-          while full_conversation_finish == False:
-            conversation_current_time = time.time()
-            if (conversation_current_time - start_time) - segment['end'] <= END_OF_CONVERSATION_IN_SECONDS:
-              logger.info(f"Difference in seconds: {(conversation_current_time - start_time) - segment['end']}s")
-              logger.info("Silence period not reached")
-              continue
-            else:
-              full_conversation_finish = True
-              break
-        else: continue
-      if full_conversation_finish == True:
-        logger.info("Silence period reached")
-        logger.info("Getting full conversation from the conversation list")
-        total_conversation = conversations.join_conversation(convo_list)
-        logger.info("Gotten conversation from the segments")
-        logger.info(f"Full conversation is: {total_conversation}")
-        ######---------------------##########
-        logger.info("Starting message analysis")
-        notification = create_notification_prompt(total_conversation)
-        logger.info(f"Sending notification prompt template for session {session_id}")
-        advice = get_advice(notification)
-        if advice:
-          return {"message": f"{advice}"}
-        else:
-          logger.error("An error occurred while sending advice")
+    if conversations.interrupt_flag.is_set():
+      conversations.reset_interrupt_flag()
+      logger.info(f"AI interrupting: Interrupting the conversation")
+      logger.info(f"Creating the notification prompt early")
+      # total_conversation = conversations.join_conversation(convo_list)
+      notification = create_notification_prompt(conversations.conversation)
+      logger.info(f"Sending notification prompt template for advice")
+      advice = get_advice(notification)
+      if advice:
+        return {"message": f"{advice}"}
       else:
-        logger.info("Conversation hasnt ended yet")
-        pass
+        logger.error("An error occured while sending advice")
+    
+    if conversations.end_convo_flag.is_set():
+      conversations.reset_end_convo_flag()
+      logger.info("End of conversation detected")
+      logger.info(f"Creating the notification prompt early")
+      # total_conversation = conversations.join_conversation(convo_list)
+      notification = create_notification_prompt(conversations.conversation)
+      logger.info(f"Sending notification prompt template for advice")
+      advice = get_advice(notification)
+      if advice:
+        logger.info(f"Advice has been created: {advice}")
+        return {"message": f"{advice}"}
+      else:
+        logger.error("An error occured while sending advice")
+    
+    # with conversations.lock:
+    #   convo_list = []
+    #   logger.info(f"Segments collected form transcripts, total count: {len(segment_json)}")
+    #   logger.info(f"Segments in list: {segment_json}")
+    #   #pseudo_segment_list = segment_json
+    #   for segment in segment_json:
+    #     transcript_text = segment['text']
+    #     conversation_list = conversations.update(transcript_text)
+    #     convo_list = conversation_list
+    #     await conversations.put_transcript_in_queue(segment)
+    #     if conversations.should_interrupt() == True:
+    #       logger.info(f"AI interrupting: Interrupting the conversation")
+    #       logger.info(f"Creating the notification prompt early")
+    #       total_conversation = conversations.join_conversation(convo_list)
+    #       notification = create_notification_prompt(total_conversation)
+    #       logger.info(f"Sending notification prompt template for advice")
+    #       advice = get_advice(notification)
+    #       if advice:
+    #         return {"message": f"{advice}"}
+    #       else:
+    #         logger.error("An error occured while sending advice")
+        
+    #     if segment == pseudo_segment_list[len(segment_json)-1]:
+    #       while full_conversation_finish == False:
+    #         conversation_current_time = time.time()
+    #         if (conversation_current_time - start_time) - segment['end'] <= END_OF_CONVERSATION_IN_SECONDS:
+    #           logger.info(f"Difference in seconds: {(conversation_current_time - start_time) - segment['end']}s")
+    #           logger.info("Silence period not reached")
+    #           continue
+    #         else:
+    #           logger.info("Silence period reached")
+    #           logger.info(f"Difference in seconds: {(conversation_current_time - start_time) - segment['end']}s")
+    #           full_conversation_finish = True
+    #           break
+    #     else: continue
+    #   if full_conversation_finish == True:
+    #     logger.info("Silence period reached")
+    #     logger.info("Getting full conversation from the conversation list")
+    #     total_conversation = conversations.join_conversation(convo_list)
+    #     logger.info("Gotten conversation from the segments")
+    #     logger.info(f"Full conversation is: {total_conversation}")
+        
+    #     ######---------------------##########
+        
+    #     logger.info("Starting message analysis")
+    #     notification = create_notification_prompt(total_conversation)
+    #     logger.info(f"Sending notification prompt template for session {session_id}")
+    #     advice = get_advice(notification)
+    #     if advice:
+    #       return {"message": f"{advice}"}
+    #     else:
+    #       logger.error("An error occurred while sending advice")
+    #   else:
+    #     logger.info("Conversation hasnt ended yet")
+    #     pass
       # #segment_end_time = segment_json[len(segment_json)-1]['end']
       # logger.info(f"Getting full conversation")
       # total_conversation = conversations.join_conversation(convo_list)

@@ -26,53 +26,14 @@ class Conversations:
     self.silence_time = silence_threshold
     self.conversation = ""
     self.notification_sent = False
-    self.lock = threading.Lock() # For thread-safe updates
+    self.lock = asyncio.Lock() # For thread-safe updates
     self.current_count = 0
     self.running = False # Thread flag for control
     self.count_thread = None
-    
-  def start_count_thread(self):
-    """Start time thread in the background
-    """
-    if not self.running:
-      self.running = True
-      self.count_thread = threading.Thread(target=self._update_count, daemon=True)
-      self.count_thread.start()
-      logger.info("Time thread started")
-  
-  def stop_count_thread(self):
-    """Stoping the time thread running in the background
-    """
-    if self.running:
-      if self.count_thread:
-        self.count_thread.join() #This waits for the thread to finish from the main thread
-      self.current_count = 0  # Return count to the default (0)
-      self.running = False
-      logger.info("Time thread stopped")
-  
-  def _update_count(self):
-    """Background thread logic to update the current time every second
-    """
-    while self.running:
-      with self.lock:
-        self.current_count += 1
-        logger.info(f"Current time is {self.current_count}")
-      time.sleep(1)
-      
-  def get_count(self):
-    """Get the count timer after the thread starts
-    """
-    with self.lock:
-      return self.current_count
-    
-  def reset_count(self):
-    """Reset the count timer for the thread to begin count from 0 again
-    """
-    with self.lock:
-      logger.info("Reseting the count timer")
-      self.current_count = 0
-      logger.info(f"The current_count: {self.current_count}")
-        
+    self.silence = False
+    self.conversation_queue = asyncio.Queue()
+    self.end_convo_flag = asyncio.Event() # Event to signal end of conversation
+    self.interrupt_flag = asyncio.Event() # Event to signal interruption
     
   def update(self, transcript_segment: str):
     logger.info(f"Updating the conversation for better context")
@@ -168,3 +129,61 @@ IT MUST BE IN CAPS""".format(transcript_segment=self.conversation)
     
     self.conversation = convo.strip()
     return self.conversation
+  
+  def join_conversation_from_transcript(self, conversation_list: list) -> str:
+    """Function to join the conversation list from a transcript into a single string
+    """
+    convo = ""
+    for conversation in conversation_list:
+      convo += conversation['text'] + " "
+    
+    self.conversation = convo.strip()
+    return self.conversation
+  
+  def reset_interrupt_flag(self):
+    """Clear the interrupt flag
+    """
+    self.interrupt_flag.clear()
+    
+  def reset_end_convo_flag(self):
+    """Clear the end conversation flag
+    """
+    self.end_convo_flag.clear()
+  
+  async def transcript_worker(self):
+    """Add the transcript to the asyncio queue easily.
+    """
+    while True:
+      try:
+        self.conversations_wait = await asyncio.wait_for(self.conversation_queue.get(), timeout=self.silence_time)
+        logger.info("Recieved transcript segment from queue")
+        
+        joined_conversation = self.join_conversation_from_transcript(self.conversations_wait)
+        logger.info(f"Joined conversation to check for interruption")
+        if self.should_interrupt() == True:
+          logger.info("Interruption needed")
+          self.interrupt_flag.set()
+      
+      except asyncio.TimeoutError:
+        logger.info("Silence detected in the conversation")
+        self.conversations = self.conversations_wait
+        self.end_convo_flag.set() # Signal the end of conversation
+        logger.info("Edited conversations list")
+        logger.info(f"Conversations list: {self.conversations}")
+        self.join_conversation_from_transcript(self.conversations)
+        logger.info(f"Created the full conversation: {self.conversation}")
+        self.flush_queue()
+
+  async def put_transcript_in_queue(self, transcript_segment):
+    """Puts the transcript in the ayncio queue
+    """
+    logger.info("Adding the transcript segment to queue")
+    await self.conversation_queue.put(transcript_segment)
+    logger.info("Successfully added segment to queue")
+
+  async def flush_queue(self):
+    """This function flushes the queue
+    """
+    while not self.conversation_queue.empty():
+        await self.conversation_queue.get()
+      
