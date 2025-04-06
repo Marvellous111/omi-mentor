@@ -155,10 +155,10 @@ IT MUST BE IN CAPS""".format(transcript_segment=self.conversation)
     """
     while True:
       try:
-        self.conversations_wait = await asyncio.wait_for(self.conversation_queue.get(), timeout=self.silence_time)
+        self.conversations = await asyncio.wait_for(self.conversation_queue.get(), timeout=self.silence_time)
         logger.info("Recieved transcript segment from queue")
         
-        joined_conversation = self.join_conversation_from_transcript(self.conversations_wait)
+        joined_conversation = self.join_conversation_from_transcript(self.conversations)
         logger.info(f"Joined conversation to check for interruption")
         if self.should_interrupt() == True:
           logger.info("Interruption needed")
@@ -166,7 +166,7 @@ IT MUST BE IN CAPS""".format(transcript_segment=self.conversation)
       
       except asyncio.TimeoutError:
         logger.info("Silence detected in the conversation")
-        self.conversations = self.conversations_wait
+        # self.conversations = self.conversations_wait
         self.end_convo_flag.set() # Signal the end of conversation
         logger.info("Edited conversations list")
         logger.info(f"Conversations list: {self.conversations}")
