@@ -91,7 +91,7 @@ async def webhook(session_id: str = Body(...), segments: List[Segment] = Body(..
   try:
     message_id = None
     
-    print(segments) ## At the moment logs shows the segment being returned in a list of a tuple
+    #print(segments) ## At the moment logs shows the segment being returned in a list of a tuple
     ## Response is like this: [Segment(text="",...)]
     
     segment_json = [segment.model_dump(mode="json") for segment in segments]
