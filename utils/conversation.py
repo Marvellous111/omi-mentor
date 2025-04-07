@@ -161,6 +161,9 @@ IT MUST BE IN CAPS""".format(transcript_segment=self.conversation)
   async def transcript_worker(self):
     """Add the transcript to the asyncio queue easily.
     """
+    
+    # In the future we can make it so it starts running when the queue changes (something enters it)
+    # And it will stop when the queue is flushed, this will save network resources yes?
     while True:
       try:
         pseudo_conversations = await asyncio.wait_for(self.conversation_queue.get(), timeout=self.silence_time+2)

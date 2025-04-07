@@ -127,21 +127,23 @@ async def webhook(session_id: str = Body(...), segments: List[Segment] = Body(..
     
     if conversations.end_convo_flag.is_set():
       logger.info("End of conversation detected")
-      logger.info(f"Creating the notification prompt early")
+      logger.info(f"Creating the notification prompt")
       # total_conversation = conversations.join_conversation(convo_list)
       notification = create_notification_prompt(conversations.conversation)
       logger.info(f"Sending notification prompt template for advice")
       advice = get_advice(notification)
+      
+      logger.info("Clearing conversation for future use")
+      conversations.reset_conversations()
+      logger.info("Resetting end conversation flag for future use")
+      conversations.reset_end_convo_flag()
+      
       if advice:
         logger.info(f"Advice has been created: {advice}")
         return {"message": f"{advice}"}
       else:
         logger.error("An error occured while sending advice")
         
-      logger.info("Clearing conversation for future use")
-      conversations.reset_conversations()
-      logger.info("Resetting end conversation flag for future use")
-      conversations.reset_end_convo_flag()
     else:
       pass
     
