@@ -101,7 +101,7 @@ async def webhook(session_id: str = Body(...), segments: List[Segment] = Body(..
       pseudo_segment_list.append(segment)
       await conversations.put_transcript_in_queue(segment)
   
-    # message_id should be generated if it isnt provided
+    # message_id should be generated if it isnt provided # Strangely i doubt this is needed, unless for scaling?
     if not message_id:
       message_id = f"{session_id}_{int(time.time())}"
       logger.info(f"Generated message_id: {message_id}")
@@ -111,9 +111,6 @@ async def webhook(session_id: str = Body(...), segments: List[Segment] = Body(..
     if not session_id:
       logger.error("No session_id provided in request")
       return {"message": "No session_id provided"}
-    
-    
-    full_conversation_finish = False
     
     if conversations.interrupt_flag.is_set():
       conversations.reset_interrupt_flag()
@@ -140,7 +137,13 @@ async def webhook(session_id: str = Body(...), segments: List[Segment] = Body(..
         return {"message": f"{advice}"}
       else:
         logger.error("An error occured while sending advice")
+        
+      logger.info("Clearing conversation for future use")
+      conversations.reset_conversations()
+      logger.info("Resetting end conversation flag for future use")
       conversations.reset_end_convo_flag()
+    else:
+      pass
     
     # with conversations.lock:
     #   convo_list = []

@@ -34,6 +34,7 @@ class Conversations:
     self.conversation_queue = asyncio.Queue()
     self.end_convo_flag = asyncio.Event() # Event to signal end of conversation
     self.interrupt_flag = asyncio.Event() # Event to signal interruption
+    self.request_count_limit = 1
     
   def update(self, transcript_segment: str):
     logger.info(f"Updating the conversation for better context")
@@ -149,6 +150,13 @@ IT MUST BE IN CAPS""".format(transcript_segment=self.conversation)
     """Clear the end conversation flag
     """
     self.end_convo_flag.clear()
+    
+  def reset_conversations(self):
+    """Resets the conversations to its empty state.
+    """
+    conversations_list = []
+    self.conversations = conversations_list
+    self.conversation = ""
   
   async def transcript_worker(self):
     """Add the transcript to the asyncio queue easily.
@@ -175,7 +183,7 @@ IT MUST BE IN CAPS""".format(transcript_segment=self.conversation)
         
         if self.conversation != "":
           self.end_convo_flag.set() # Signal the end of conversation
-          self.flush_queue()
+          await self.flush_queue()
         else:
           logger.info("There is nothing to do for now")
 
