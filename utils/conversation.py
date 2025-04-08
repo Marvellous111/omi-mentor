@@ -36,7 +36,7 @@ class Conversations:
     self.running = False # Thread flag for control
     self.count_thread = None
     self.silence = False
-    self.conversation_queue = asyncio.Queue()
+    self.conversation_queue = asyncio.Queue(maxsize=1)
     self.start_queue = False
     self.end_convo_flag = asyncio.Event() # Event to signal end of conversation
     self.interrupt_flag = asyncio.Event() # Event to signal interruption
@@ -180,7 +180,6 @@ IT MUST BE IN CAPS""".format(transcript_segment=self.conversation)
   async def transcript_worker(self):
     """Add the transcript to the asyncio queue easily.
     """
-    
     # We can make it so it starts running when the queue changes (something enters it)
     # And it will stop when the queue is flushed, this will save network resources yes?
     while True:
@@ -229,6 +228,11 @@ IT MUST BE IN CAPS""".format(transcript_segment=self.conversation)
     """Puts the transcript in the ayncio queue
     """
     logger.info("Adding the transcript segment to queue")
+    if self.conversation_queue.qsize() > 0:
+      await self.conversation_queue.get()
+      logger.info("Removed previous item from queue")
+    else:
+      logger.info("Queue is empty")
     await self.conversation_queue.put(transcript_segment)
     logger.info(f"Conversation queue: {self.conversation_queue}")
     logger.info("Successfully added segment to queue")
