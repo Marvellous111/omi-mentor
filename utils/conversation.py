@@ -32,9 +32,10 @@ class Conversations:
     self.count_thread = None
     self.silence = False
     self.conversation_queue = asyncio.Queue()
+    self.start_queue = False
     self.end_convo_flag = asyncio.Event() # Event to signal end of conversation
     self.interrupt_flag = asyncio.Event() # Event to signal interruption
-    self.request_count_limit = 1
+    self.rate_limit_count = 1
     
   def update(self, transcript_segment: str):
     logger.info(f"Updating the conversation for better context")
@@ -43,7 +44,7 @@ class Conversations:
     self.notification_sent = False
     return self.conversations
     
-  def should_interrupt(self) -> bool:
+  def should_interrupt(self) -> bool: # We are removing async from the function name for now
     logger.info(f"Starting interrupt function")
     try:
       logger.debug(f"Sending request to groq API")
@@ -141,6 +142,8 @@ IT MUST BE IN CAPS""".format(transcript_segment=self.conversation)
     self.conversation = convo.strip()
     return self.conversation
   
+  ## Some functions here aren't necessary to be honest, we could simply hardcode them, but i wanna use them as functions
+  
   def reset_interrupt_flag(self):
     """Clear the interrupt flag
     """
@@ -157,24 +160,36 @@ IT MUST BE IN CAPS""".format(transcript_segment=self.conversation)
     conversations_list = []
     self.conversations = conversations_list
     self.conversation = ""
+    
+  def reset_rate_limit(self):
+    """Resets the rate limit from 0 to default
+    """
+    self.rate_limit_count = 1
+  
+  def use_rate_limit(self):
+    """Uses the rate limit from default to new number
+    """
+    self.rate_limit_count = 0
   
   async def transcript_worker(self):
     """Add the transcript to the asyncio queue easily.
     """
     
-    # In the future we can make it so it starts running when the queue changes (something enters it)
+    # We can make it so it starts running when the queue changes (something enters it)
     # And it will stop when the queue is flushed, this will save network resources yes?
-    while True:
+    while self.start_queue:
       try:
-        pseudo_conversations = await asyncio.wait_for(self.conversation_queue.get(), timeout=self.silence_time+2)
+        pseudo_conversations = await asyncio.wait_for(self.conversation_queue.get(), timeout=self.silence_time+3)
         self.conversations.append(pseudo_conversations)
         logger.info(f"Received transcript segment from queue: {self.conversations}")
         
         joined_conversation = self.join_conversation_from_transcript(self.conversations)
         logger.info(f"Joined conversation to check for interruption")
-        if self.should_interrupt() == True:
+        if self.should_interrupt() == True: ## Is await needed here? yes
           logger.info("Interruption needed")
           self.interrupt_flag.set()
+          ## We are going to straight up code a bug here to allow unlimited rate limits when we are interrupting (Will probably be fixed later depending on how it goes)
+          ## Any race condition here?
       
       except asyncio.TimeoutError:
         logger.info("Silence detected in the conversation")
@@ -185,16 +200,30 @@ IT MUST BE IN CAPS""".format(transcript_segment=self.conversation)
         logger.info(f"Created the full conversation: {self.conversation}")
         
         if self.conversation != "":
-          self.end_convo_flag.set() # Signal the end of conversation
-          await self.flush_queue()
+          if self.rate_limit_count == 1:
+            self.end_convo_flag.set() # Signal the end of conversation
+            await self.flush_queue()
+          elif self.rate_limit == 0:
+            logger.info("Rate limit reached, waiting for next legitimate request")
+            #self.rate_limit_count = 1
+            await self.flush_queue()
+            self.reset_conversations()
+            self.reset_rate_limit()
         else:
+          if self.rate_limit_count == 0:
+            self.reset_rate_limit()
           logger.info("There is nothing to do for now")
+        
+        self.start_queue = False
+        
+    asyncio.sleep(2) ## The function will run every 2 seconds
 
   async def put_transcript_in_queue(self, transcript_segment):
     """Puts the transcript in the ayncio queue
     """
     logger.info("Adding the transcript segment to queue")
     await self.conversation_queue.put(transcript_segment)
+    self.start_queue = True
     logger.info(f"Conversation queue: {self.conversation_queue}")
     logger.info("Successfully added segment to queue")
 

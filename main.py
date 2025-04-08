@@ -75,6 +75,7 @@ At the moment though we can remove the notifications for now.
 async def startup_event():
   asyncio.create_task(conversations.transcript_worker())
   logger.info("Asyncio streaming data task started")
+  asyncio.sleep(2.0)
   
 # @app.on_event("shutdown")
 # async def shutdown_event():
@@ -89,6 +90,7 @@ pseudo_segment_list = []
 async def webhook(session_id: str = Body(...), segments: List[Segment] = Body(..., embed=True)):
   logger.info("Recieved webhook POST request")
   try:
+    
     message_id = None
     
     #print(segments) ## At the moment logs shows the segment being returned in a list of a tuple
@@ -100,6 +102,9 @@ async def webhook(session_id: str = Body(...), segments: List[Segment] = Body(..
     for segment in segment_json:
       pseudo_segment_list.append(segment)
       await conversations.put_transcript_in_queue(segment)
+      
+    if conversations.rate_limit_count == 0:
+      conversations.reset_rate_limit()
   
     # message_id should be generated if it isnt provided # Strangely i doubt this is needed, unless for scaling?
     if not message_id:
@@ -112,7 +117,7 @@ async def webhook(session_id: str = Body(...), segments: List[Segment] = Body(..
       logger.error("No session_id provided in request")
       return {"message": "No session_id provided"}
     
-    if conversations.interrupt_flag.is_set():
+    if conversations.interrupt_flag.is_set(): ## No rate limit here
       conversations.reset_interrupt_flag()
       logger.info(f"AI interrupting: Interrupting the conversation")
       logger.info(f"Creating the notification prompt early")
@@ -131,12 +136,15 @@ async def webhook(session_id: str = Body(...), segments: List[Segment] = Body(..
       # total_conversation = conversations.join_conversation(convo_list)
       notification = create_notification_prompt(conversations.conversation)
       logger.info(f"Sending notification prompt template for advice")
+      logger.info("Using the rate limit, reset to use again")
+      conversations.use_rate_limit()
       advice = get_advice(notification)
       
       logger.info("Clearing conversation for future use")
       conversations.reset_conversations()
       logger.info("Resetting end conversation flag for future use")
       conversations.reset_end_convo_flag()
+      
       
       if advice:
         logger.info(f"Advice has been created: {advice}")
