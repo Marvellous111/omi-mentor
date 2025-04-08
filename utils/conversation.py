@@ -5,6 +5,7 @@ from typing import Optional
 import threading
 
 ## Imported python packages
+from utils.OneQueue import OneQueue
 from Logcode import *
 from data.constants import *
 from data.context import *
@@ -18,9 +19,13 @@ class Conversations:
   If a delay is noticed passed the silence time then it simply saves the data it has gotten
   It then uses the data as context for a message for the AI.
   
+  We want to ignore all transcripts and get only the last response??
+  
   Perhaps it should also feature an interruption method? to get the context of an argument and interrupt where necessary
   """
   def __init__(self, silence_threshold=END_OF_CONVERSATION_IN_SECONDS):
+    self.onequeue = OneQueue()
+    # self.onequeue_queue = self.onequeue.queue
     self.last_request_time = time.time()
     self.conversations = conversations_list
     self.silence_time = silence_threshold
@@ -36,6 +41,7 @@ class Conversations:
     self.end_convo_flag = asyncio.Event() # Event to signal end of conversation
     self.interrupt_flag = asyncio.Event() # Event to signal interruption
     self.rate_limit_count = 1
+    self.pseudo_conversations_list = []
     
   def update(self, transcript_segment: str):
     logger.info(f"Updating the conversation for better context")
@@ -177,19 +183,23 @@ IT MUST BE IN CAPS""".format(transcript_segment=self.conversation)
     
     # We can make it so it starts running when the queue changes (something enters it)
     # And it will stop when the queue is flushed, this will save network resources yes?
-    while self.start_queue:
+    while True:
+      ## Rework necessary
       try:
         pseudo_conversations = await asyncio.wait_for(self.conversation_queue.get(), timeout=self.silence_time+3)
-        self.conversations.append(pseudo_conversations)
+        
+        self.pseudo_conversations_list.append(pseudo_conversations)
+        logger.info(f"Sent convo to pseudo conversations: {self.pseudo_conversations_list}")
+        
         logger.info(f"Received transcript segment from queue: {self.conversations}")
         
-        joined_conversation = self.join_conversation_from_transcript(self.conversations)
+        joined_conversation = self.join_conversation_from_transcript(self.conversations[len(self.conversations)-1])
         logger.info(f"Joined conversation to check for interruption")
         if self.should_interrupt() == True: ## Is await needed here? yes
           logger.info("Interruption needed")
           self.interrupt_flag.set()
           ## We are going to straight up code a bug here to allow unlimited rate limits when we are interrupting (Will probably be fixed later depending on how it goes)
-          ## Any race condition here?
+          ## Any race condition here? doubt it
       
       except asyncio.TimeoutError:
         logger.info("Silence detected in the conversation")
@@ -214,16 +224,12 @@ IT MUST BE IN CAPS""".format(transcript_segment=self.conversation)
             self.reset_rate_limit()
           logger.info("There is nothing to do for now")
         
-        self.start_queue = False
-        
-    asyncio.sleep(2) ## The function will run every 2 seconds
 
   async def put_transcript_in_queue(self, transcript_segment):
     """Puts the transcript in the ayncio queue
     """
     logger.info("Adding the transcript segment to queue")
     await self.conversation_queue.put(transcript_segment)
-    self.start_queue = True
     logger.info(f"Conversation queue: {self.conversation_queue}")
     logger.info("Successfully added segment to queue")
 

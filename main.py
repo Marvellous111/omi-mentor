@@ -24,6 +24,7 @@ from utils.Buffer import MessageBuffer
 #from utils.gettime import get_transcript_on_time
 #from data.context import conversations_list, transcript_segment, unclean_context_list
 from utils.conversation import Conversations
+from utils.OneQueue import OneQueue
 
 
 app = FastAPI()
@@ -57,6 +58,7 @@ comments tagged with (perhaps example) are edited example code
 message_buffer = MessageBuffer()
 logger.info(f"Analysis interval set to {END_OF_CONVERSATION_IN_SECONDS} seconds")
 conversations = Conversations()
+oneQueue = OneQueue()
 
 ''''''
 
@@ -83,11 +85,46 @@ async def startup_event():
 #   logger.info("Stopped time thread, ended server lifespan")
 
 
+### We need to change the way the server collects the trasncript from omi.
+'''
+The transcripts gotten from the omi server (We will call it server) is:
+t1, t2, t3, t4
+
+where t2 = t1 + t1.5 (The transcripts are updated per request)
+
+So what we need to do is to call the last transcript gotten after the end of the server send
+
+'''
+
+main_advice = ""
+
+
+def create_advice() -> str: 
+  logger.info("End of conversation detected")
+  logger.info(f"Creating the notification prompt")
+  # total_conversation = conversations.join_conversation(convo_list)
+  notification = create_notification_prompt(conversations.conversation)
+  logger.info(f"Sending notification prompt template for advice")
+  logger.info("Using the rate limit, reset to use again")
+  conversations.use_rate_limit()
+  advice = get_advice(notification)
+      
+  logger.info("Clearing conversation for future use")
+  conversations.reset_conversations()
+  logger.info("Resetting end conversation flag for future use")
+  conversations.reset_end_convo_flag()    
+      
+  if advice:
+    logger.info(f"Advice has been created: {advice}")
+    return {"message": f"{advice}"}
+  else:
+    logger.error("An error occured while sending advice")
+
 
 pseudo_segment_list = []
 
 @app.post("/webhook")
-async def webhook(session_id: str = Body(...), segments: List[Segment] = Body(..., embed=True)):
+async def webhook(background_tasks: BackgroundTasks, session_id: str = Body(...), segments: List[Segment] = Body(..., embed=True)):
   logger.info("Recieved webhook POST request")
   try:
     
@@ -99,10 +136,14 @@ async def webhook(session_id: str = Body(...), segments: List[Segment] = Body(..
     segment_json = [segment.model_dump(mode="json") for segment in segments]
     logger.info(f"Segments converted to json are: {segment_json}")
     
+    
     for segment in segment_json:
       pseudo_segment_list.append(segment)
       await conversations.put_transcript_in_queue(segment)
-      
+    
+    # await oneQueue.fill_queue_multiple_items(segment_json)
+    # pseudo_transcript = await asyncio.wait_for(oneQueue.queue.get(), timeout=5) # I think this shoots me no??
+    
     if conversations.rate_limit_count == 0:
       conversations.reset_rate_limit()
   
@@ -131,27 +172,8 @@ async def webhook(session_id: str = Body(...), segments: List[Segment] = Body(..
         logger.error("An error occured while sending advice")
     
     if conversations.end_convo_flag.is_set():
-      logger.info("End of conversation detected")
-      logger.info(f"Creating the notification prompt")
-      # total_conversation = conversations.join_conversation(convo_list)
-      notification = create_notification_prompt(conversations.conversation)
-      logger.info(f"Sending notification prompt template for advice")
-      logger.info("Using the rate limit, reset to use again")
-      conversations.use_rate_limit()
-      advice = get_advice(notification)
-      
-      logger.info("Clearing conversation for future use")
-      conversations.reset_conversations()
-      logger.info("Resetting end conversation flag for future use")
-      conversations.reset_end_convo_flag()
-      
-      
-      if advice:
-        logger.info(f"Advice has been created: {advice}")
-        return {"message": f"{advice}"}
-      else:
-        logger.error("An error occured while sending advice")
-        
+      background_tasks.add_task(create_advice)
+      logger.info("Created background task to send notification")    
     else:
       pass
     
