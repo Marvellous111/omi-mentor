@@ -192,7 +192,7 @@ IT MUST BE IN CAPS""".format(transcript_segment=self.conversation)
         
         logger.info(f"Received transcript segment from queue: {self.conversations}")
         
-        joined_conversation = self.join_conversation_from_transcript(self.conversations[len(self.conversations)-1])
+        joined_conversation = self.join_conversation_from_transcript(self.conversations)
         logger.info(f"Joined conversation to check for interruption")
         if self.should_interrupt() == True: ## Is await needed here? yes
           logger.info("Interruption needed")

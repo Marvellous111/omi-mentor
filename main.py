@@ -99,32 +99,32 @@ So what we need to do is to call the last transcript gotten after the end of the
 main_advice = ""
 
 
-def create_advice() -> str: 
-  logger.info("End of conversation detected")
-  logger.info(f"Creating the notification prompt")
-  # total_conversation = conversations.join_conversation(convo_list)
-  notification = create_notification_prompt(conversations.conversation)
-  logger.info(f"Sending notification prompt template for advice")
-  logger.info("Using the rate limit, reset to use again")
-  conversations.use_rate_limit()
-  advice = get_advice(notification)
+# def create_advice(): 
+#   logger.info("End of conversation detected")
+#   logger.info(f"Creating the notification prompt")
+#   # total_conversation = conversations.join_conversation(convo_list)
+#   notification = create_notification_prompt(conversations.conversation)
+#   logger.info(f"Sending notification prompt template for advice")
+#   logger.info("Using the rate limit, reset to use again")
+#   conversations.use_rate_limit()
+#   advice = get_advice(notification)
       
-  logger.info("Clearing conversation for future use")
-  conversations.reset_conversations()
-  logger.info("Resetting end conversation flag for future use")
-  conversations.reset_end_convo_flag()    
+#   logger.info("Clearing conversation for future use")
+#   conversations.reset_conversations()
+#   logger.info("Resetting end conversation flag for future use")
+#   conversations.reset_end_convo_flag()    
       
-  if advice:
-    logger.info(f"Advice has been created: {advice}")
-    return {"message": f"{advice}"}
-  else:
-    logger.error("An error occured while sending advice")
+#   if advice:
+#     logger.info(f"Advice has been created: {advice}")
+#     return {"message": f"{advice}"}
+#   else:
+#     logger.error("An error occured while sending advice")
 
 
 pseudo_segment_list = []
 
 @app.post("/webhook")
-async def webhook(background_tasks: BackgroundTasks, session_id: str = Body(...), segments: List[Segment] = Body(..., embed=True)):
+async def webhook(session_id: str = Body(...), segments: List[Segment] = Body(..., embed=True)):
   logger.info("Recieved webhook POST request")
   try:
     
@@ -172,8 +172,25 @@ async def webhook(background_tasks: BackgroundTasks, session_id: str = Body(...)
         logger.error("An error occured while sending advice")
     
     if conversations.end_convo_flag.is_set():
-      background_tasks.add_task(create_advice)
-      logger.info("Created background task to send notification")    
+      logger.info("End of conversation detected")
+      logger.info(f"Creating the notification prompt")
+      # total_conversation = conversations.join_conversation(convo_list)
+      notification = create_notification_prompt(conversations.conversation)
+      logger.info(f"Sending notification prompt template for advice")
+      logger.info("Using the rate limit, reset to use again")
+      conversations.use_rate_limit()
+      advice = get_advice(notification)
+          
+      logger.info("Clearing conversation for future use")
+      conversations.reset_conversations()
+      logger.info("Resetting end conversation flag for future use")
+      conversations.reset_end_convo_flag()    
+          
+      if advice:
+        logger.info(f"Advice has been created: {advice}")
+        return {"message": f"{advice}"}
+      else:
+        logger.error("An error occured while sending advice")
     else:
       pass
     
